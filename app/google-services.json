@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "615259866953",
+    "project_id": "daily-expenses-78a61",
+    "storage_bucket": "daily-expenses-78a61.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615259866953:android:0cdf8ba8aa89e2f2763c98",
+        "android_client_info": {
+          "package_name": "com.jrProfessor.todoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlTANNNPhqTWNmkNd7swkPiKuxP1qqTjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
