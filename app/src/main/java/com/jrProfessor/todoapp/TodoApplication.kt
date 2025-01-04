@@ -1,13 +1,12 @@
 package com.jrProfessor.todoapp
 
 import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
+import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 
-@HiltAndroidApp
-class TodoApplication:Application()
-/*
-class TodoApplication : DaggerApplication() {
-    override fun applicationInjector(): AndroidInjector<out DaggerApplication> {
-        return DaggerAppComponent.builder().application(this).build()
+class TodoApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        FirebaseApp.getInstance()
     }
-}*/
+}

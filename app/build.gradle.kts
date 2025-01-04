@@ -76,10 +76,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     kapt(libs.androidx.room.room.compiler)
-    //dagger
-    /*implementation(libs.dagger)
-    kapt(libs.dagger.compiler)
-    implementation(libs.dagger.android)
-    implementation(libs.dagger.android.support)
-    kapt (libs.dagger.android.processor)*/
+
+    //
+    implementation(libs.gson)
+
 }
