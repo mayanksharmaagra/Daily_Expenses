@@ -1,16 +1,9 @@
-package com.jrProfessor.todoapp.screen
+package com.jrProfessor.todoapp.screen.welcome
 
-import android.content.Context
-import android.util.Log
-import android.widget.Toast
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,43 +31,48 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.google.gson.Gson
 import com.jrProfessor.todoapp.R
 import com.jrProfessor.todoapp.model.User
+import com.jrProfessor.todoapp.screen.CustomLoader
+import com.jrProfessor.todoapp.screen.common.ActionButton
+import com.jrProfessor.todoapp.screen.home.HomeActivity
 import com.jrProfessor.todoapp.ui.theme.PrimaryColor
+import com.jrProfessor.todoapp.utils.CustomToast
+import com.jrProfessor.todoapp.viewmodel.AuthenticationViewModel
+
 
 @Preview
 @Composable
 fun SignUpScreenPreview(modifier: Modifier = Modifier) {
-//    SignUpScreen()
+
 }
 
 
 @Composable
-fun SignUpScreen() {
+fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel) {
     val context = LocalContext.current
+    /**signup related variable*/
+    var signUpNameState by remember { mutableStateOf("") }
+    var signUpMobileState by remember { mutableStateOf("") }
+    var signUpEmailState by remember { mutableStateOf("") }
+    var signUpPasswordState by remember { mutableStateOf("") }
+    var signUpIsPasswordVisible by remember { mutableStateOf(false) }
+
+    /**signin related variable*/
+    var signInEmailState by remember { mutableStateOf("") }
+    var signInPasswordState by remember { mutableStateOf("") }
+    var signInIsPasswordVisible by remember { mutableStateOf(false) }
+
+    var showToast by remember { mutableStateOf(false) }
+    var isLoginView by remember { mutableStateOf(false) }
+    var toastMessage by remember { mutableStateOf("") }
+    var loadingState by remember { mutableStateOf(false) }  // To track the loading state
     Surface(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.white))
 
     ) {
-        /**signup related variable*/
-        var signUpNameState by remember { mutableStateOf("") }
-        var signUpMobileState by remember { mutableStateOf("") }
-        var signUpPasswordState by remember { mutableStateOf("") }
-        var signUpIsPasswordVisible by remember { mutableStateOf(false) }
-
-        /**signin related variable*/
-        var signInMobileState by remember { mutableStateOf("") }
-        var signInPasswordState by remember { mutableStateOf("") }
-        var signInIsPasswordVisible by remember { mutableStateOf(false) }
-
-        var isLoginView by remember { mutableStateOf(false) }
 
         Column {
             Image(
@@ -111,7 +109,20 @@ fun SignUpScreen() {
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(6.dp)
+                                .padding(2.dp)
+                        )
+                        OutlinedTextField(
+                            value = signUpEmailState,
+                            onValueChange = {
+                                signUpEmailState = it
+                            },
+                            label = { Text("Email") },
+                            placeholder = { Text("Email...") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(2.dp),
+                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
                         )
                         OutlinedTextField(
                             value = signUpMobileState,
@@ -125,16 +136,18 @@ fun SignUpScreen() {
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(6.dp),
+                                .padding(2.dp),
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                         )
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(6.dp),
+                                .padding(2.dp),
                             value = signUpPasswordState,
-                            onValueChange = {
-                                signUpPasswordState = it
+                            onValueChange = { password ->
+                                if (password.length <= 12) {
+                                    signUpPasswordState = password
+                                }
                             },
                             label = { Text("Password") },
                             visualTransformation = if (signUpIsPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -170,27 +183,27 @@ fun SignUpScreen() {
                                 .padding(6.dp),
                         )
                         OutlinedTextField(
-                            value = signInMobileState,
-                            onValueChange = { number ->
-                                if (number.all { it.isDigit() } && number.length <= 10) {
-                                    signInMobileState = number
-                                }
+                            value = signInEmailState,
+                            onValueChange = {
+                                signInEmailState = it
                             },
-                            label = { Text("Mobile no.") },
-                            placeholder = { Text("Mobile no.") },
+                            label = { Text("Email") },
+                            placeholder = { Text("Email...") },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(6.dp),
-                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                                .padding(2.dp),
+                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
                         )
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(6.dp),
+                                .padding(2.dp),
                             value = signInPasswordState,
-                            onValueChange = {
-                                signInPasswordState = it
+                            onValueChange = { password ->
+                                if (password.length <= 12) {
+                                    signInPasswordState = password
+                                }
                             },
                             label = { Text("Password") },
                             visualTransformation = if (signInIsPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -237,45 +250,59 @@ fun SignUpScreen() {
                     ),
                     title = if (isLoginView) "Sign In" else "Create Account",
                     onClick = {
+                        loadingState=true
                         if (!isLoginView) {
                             val user = User(
                                 name = signUpNameState,
                                 mobile = signUpMobileState,
-                                password = signUpPasswordState
+                                password = signUpPasswordState,
+                                emailId = signUpEmailState
                             )
-                            signUpAccount(user, context, onSuccess = {
-                                isLoginView = true
-                            }, onError = {
-
-                            }
+                            viewmodel.signUpAccount(user,
+                                onSuccess = {
+                                    loadingState=false
+                                    toastMessage = it
+                                    showToast = true
+                                    isLoginView = true
+                                },
+                                onError = {
+                                    loadingState=false
+                                    toastMessage = it
+                                    showToast = true
+                                }
                             )
                         } else {
-
+                            val user = User(
+                                emailId = signInEmailState,
+                                password = signInPasswordState
+                            )
+                            viewmodel.signInAccount(user,
+                                onSuccess = { user, _ ->
+                                    loadingState=false
+                                    if (user != null) {
+                                        val intent = Intent(context, HomeActivity::class.java)
+                                        context.startActivity(intent)
+                                        activity.finishAffinity()
+                                    }
+                                },
+                                onError = { _, message ->
+                                    loadingState=false
+                                    toastMessage = message.orEmpty()
+                                    showToast = true
+                                }
+                            )
                         }
                     }
                 )
             }
         }
-    }
-}
-
-fun signUpAccount(user: User, context: Context, onSuccess: () -> Unit, onError: () -> Unit) {
-    val firebaseDatabase = FirebaseDatabase.getInstance();
-    val databaseReference = firebaseDatabase.getReference("ExpensesInfo")
-
-    val userKey = user.mobile
-    databaseReference.child(userKey).setValue(user).addOnCompleteListener { task ->
-        if (task.isSuccessful) {
-            onSuccess()
-            Toast.makeText(context, "Your information saved successfully", Toast.LENGTH_SHORT)
-                .show()
-        } else {
-            onError()
-            Toast.makeText(
-                context,
-                "Database Error: ${task.exception?.message}",
-                Toast.LENGTH_SHORT
-            ).show()
+        if (showToast) {
+            CustomToast(
+                message = toastMessage,
+                iconRes = R.drawable.ic_error,
+                onDismiss = { showToast = false }
+            )
         }
+        CustomLoader(loadingState)
     }
 }

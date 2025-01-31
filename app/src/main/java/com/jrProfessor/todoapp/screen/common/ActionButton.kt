@@ -1,4 +1,4 @@
-package com.jrProfessor.todoapp.screen
+package com.jrProfessor.todoapp.screen.common
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
