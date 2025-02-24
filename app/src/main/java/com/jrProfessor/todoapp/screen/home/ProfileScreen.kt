@@ -20,6 +20,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,43 +45,45 @@ import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 
 @Composable
 fun ProfileScreen(viewModel: HomeViewModel?, navController: NavHostController?) {
-    val user = viewModel?.getUser()
-    ConstraintLayout(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-    ) {
-        val (box1, userView, categoryView, logoutView, deleteAccountView) = createRefs()
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(150.dp)
-            .background(color = PrimaryColor)
-            .constrainAs(box1) {
-                top.linkTo(parent.top)
+    viewModel?.let {
+        val user by viewModel.user.observeAsState()
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+        ) {
+            val (box1, userView, categoryView, logoutView, deleteAccountView) = createRefs()
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .height(250.dp)
+                .background(color = PrimaryColor)
+                .constrainAs(box1) {
+                    top.linkTo(parent.top)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                })
+
+            ProfileCard(user, modifier = Modifier.constrainAs(userView) {
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
+                top.linkTo(box1.bottom, margin = -(70.dp))
             })
-
-        ProfileCard(user, modifier = Modifier.constrainAs(userView) {
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            top.linkTo(box1.bottom, margin = -(70.dp))
-        })
-        CategoriesCard(modifier = Modifier.constrainAs(categoryView) {
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            top.linkTo(userView.bottom, margin = 20.dp)
-        }, navController)
-        LogoutCard(modifier = Modifier.constrainAs(logoutView) {
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            top.linkTo(categoryView.bottom, margin = 20.dp)
-        }, viewModel)
-        DeleteAccountCard(modifier = Modifier.constrainAs(deleteAccountView) {
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            top.linkTo(logoutView.bottom, margin = 20.dp)
-        })
+            WalletCard(modifier = Modifier.constrainAs(categoryView) {
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+                top.linkTo(userView.bottom, margin = 20.dp)
+            }, navController)
+            LogoutCard(modifier = Modifier.constrainAs(logoutView) {
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+                top.linkTo(categoryView.bottom, margin = 20.dp)
+            }, viewModel)
+            DeleteAccountCard(modifier = Modifier.constrainAs(deleteAccountView) {
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+                top.linkTo(logoutView.bottom, margin = 20.dp)
+            })
+        }
     }
 }
 
@@ -137,7 +141,7 @@ fun ProfileCard(user: User?, modifier: Modifier) {
 }
 
 @Composable
-fun CategoriesCard(modifier: Modifier, navController: NavHostController?) {
+fun WalletCard(modifier: Modifier, navController: NavHostController?) {
     Card(modifier = modifier
         .padding(horizontal = 15.dp)
         .fillMaxWidth(),
@@ -154,7 +158,7 @@ fun CategoriesCard(modifier: Modifier, navController: NavHostController?) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(R.drawable.ic_wallet),
+                    painter = painterResource(R.drawable.ic_wallet_icon),
                     contentDescription = "Todo",
                     modifier = Modifier
                         .padding(vertical = 5.dp)

@@ -1,33 +1,23 @@
 package com.jrProfessor.todoapp.screen.home
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,243 +33,177 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.navigation.NavHostController
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.model.ExpensesModel
 import com.jrProfessor.todoapp.screen.CustomLoader
+import com.jrProfessor.todoapp.screen.common.CommonDateTimeViewWithLabel
+import com.jrProfessor.todoapp.screen.common.CommonEditViewWithLabel
+import com.jrProfessor.todoapp.screen.common.CustomToolBar
+import com.jrProfessor.todoapp.screen.common.IconSpinnerItem
 import com.jrProfessor.todoapp.ui.theme.PrimaryColor
+import com.jrProfessor.todoapp.utils.AppUtils.CATEGORY
 import com.jrProfessor.todoapp.viewmodel.HomeViewModel
-import java.util.Calendar
 
 @Preview
 @Composable
 fun PreviewScreen(modifier: Modifier = Modifier) {
-    AddExpenseScreen()
+    AddExpenseScreen(null, null, null, null)
 }
 
 @Composable
-fun AddExpenseScreen(viewModel: HomeViewModel? = null) {
-    var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var itemName by remember { mutableStateOf("") }
-    var dateValue by remember { mutableStateOf("") }
-    var timeValue by remember { mutableStateOf("") }
-    var loadingState by remember { mutableStateOf(false) }  // To track the loading state
+fun AddExpenseScreen(
+    viewModel: HomeViewModel? = null,
+    id: String?,
+    expenseModel: ExpensesModel?,
+    navController: NavHostController? = null
+) {
+    var amount by remember { mutableStateOf(expenseModel?.amount ?: "") }
+    var selectedCategory by remember { mutableStateOf(expenseModel?.category ?: "Select Category") }
+    var itemName by remember { mutableStateOf(expenseModel?.itemName ?: "") }
+    var dateValue by remember { mutableStateOf(expenseModel?.dateValue ?: "") }
+    var timeValue by remember { mutableStateOf(expenseModel?.timeValue ?: "") }
     val context = LocalContext.current
-    ConstraintLayout(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-    ) {
-        val (toolbar, amountField, categoryField, itemField, dateField, timeField, btnAddExpense, loadingIndicator) = createRefs()
-        CustomToolBar(Modifier.constrainAs(toolbar) {
-            top.linkTo(parent.top)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        })
-        CommonEditViewWithLabel(modifier = Modifier.constrainAs(amountField) {
-            top.linkTo(toolbar.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        },
-            title = "Amount",
-            text = amount.toString(),
-            keyboardType = KeyboardType.Number,
-            onValueChange = { amount = it })
-        CommonEditViewWithLabel(modifier = Modifier.constrainAs(categoryField) {
-            top.linkTo(amountField.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        }, text = category, title = "Category", onValueChange = { category = it })
+    viewModel?.let {
+        val isLoading by viewModel.isLoading.observeAsState(false)
+        val errorMessage by viewModel.errorMessage.observeAsState()
+        val isSuccess by viewModel.isSuccess.observeAsState(false)
 
-        CommonEditViewWithLabel(modifier = Modifier.constrainAs(itemField) {
-            top.linkTo(categoryField.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        }, text = itemName, title = "Item Name", onValueChange = { itemName = it })
-
-        CommonDateTimeViewWithLabel(modifier = Modifier.constrainAs(dateField) {
-            top.linkTo(itemField.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        },
-            title = "Date",
-            icon = R.drawable.ic_calendar,
-            value = dateValue,
-            onValueChange = { dateValue = it })
-
-        CommonDateTimeViewWithLabel(
-            modifier = Modifier.constrainAs(timeField) {
-                top.linkTo(dateField.bottom)
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+        ) {
+            val (toolbar, amountField, categorySpinner, itemField, dateField, timeField, btnAddExpense, loadingIndicator) = createRefs()
+            CustomToolBar(
+                Modifier.constrainAs(toolbar) {
+                    top.linkTo(parent.top)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                },
+                navController,
+                icon = painterResource(R.drawable.ic_arrow_back),
+                title = "Add Expenses",
+                textColor = PrimaryColor
+            )
+            CommonEditViewWithLabel(modifier = Modifier.constrainAs(amountField) {
+                top.linkTo(toolbar.bottom)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
             },
-            title = "Time",
-            icon = R.drawable.ic_time,
-            value = timeValue,
-            onValueChange = { timeValue = it })
+                title = "Amount",
+                text = amount,
+                keyboardType = KeyboardType.Number,
+                onValueChange = { amount = it })
+            IconSpinnerItem(
+                label = "Expense Category",
+                options = CATEGORY,
+                selectedOption = selectedCategory,
+                onOptionSelected = { selectedCategory = it },
+                modifier = Modifier.constrainAs(categorySpinner) {
+                    top.linkTo(amountField.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }
+            )
 
-        Button(modifier = Modifier.constrainAs(btnAddExpense) {
-            top.linkTo(timeField.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        }, onClick = {
-            if (amount.isNotEmpty() &&
-                category.isNotEmpty() &&
-                itemName.isNotEmpty() &&
-                dateValue.isNotEmpty() &&
-                timeValue.isNotEmpty()
-            ) {
-                loadingState = true
-                val hashMap = hashMapOf(
-                    "amount" to amount,
-                    "category" to category,
-                    "itemName" to itemName,
-                    "dateValue" to dateValue,
-                    "timeValue" to timeValue
-                )
-                viewModel?.saveExpenses(hashMap, onSuccess = { isSuccess ->
-                    loadingState = false
-                    if (isSuccess) {
-                        Toast.makeText(
-                            context, "Successfully save record", Toast.LENGTH_SHORT
-                        ).show()
-                        //clear view
-                        amount = ""
-                        category = ""
-                        itemName = ""
-                        dateValue = ""
-                        timeValue = ""
-                    }
-                }, onError = { isSuccess, message ->
-                    loadingState = false
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                })
-            } else {
-                Toast.makeText(
-                    context, "Fields are empty.", Toast.LENGTH_SHORT
-                ).show()
-            }
-        }, colors = ButtonDefaults.buttonColors(
-            contentColor = Color.White, containerColor = PrimaryColor
-        ), shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("Submit", fontStyle = FontStyle.Normal, fontSize = 20.sp)
-        }
-        // Show loading indicator when data is being saved
-        CustomLoader(loadingState)
-    }
-}
+            CommonEditViewWithLabel(modifier = Modifier.constrainAs(itemField) {
+                top.linkTo(categorySpinner.bottom)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            }, text = itemName, title = "Item Name", onValueChange = { itemName = it })
 
-@Composable
-fun CommonDateTimeViewWithLabel(
-    modifier: Modifier, title: String, icon: Int, value: String, onValueChange: (String) -> Unit
-) {
-    val context = LocalContext.current
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(10.dp)
-    ) {
+            CommonDateTimeViewWithLabel(modifier = Modifier.constrainAs(dateField) {
+                top.linkTo(itemField.bottom)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            }, title = "Date",
+                icon = R.drawable.ic_calendar,
+                value = dateValue,
+                onValueChange = { dateValue = it })
 
-        Text(title, style = TextStyle(color = Color.Black, fontSize = 16.sp))
-        Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    if (title == "Date") {
-                        chooseDate(context, onValueChange)
+            CommonDateTimeViewWithLabel(
+                modifier = Modifier.constrainAs(timeField) {
+                    top.linkTo(dateField.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                },
+                title = "Time",
+                icon = R.drawable.ic_time,
+                value = timeValue,
+                onValueChange = { timeValue = it })
+
+            Button(modifier = Modifier.constrainAs(btnAddExpense) {
+                top.linkTo(timeField.bottom)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            }, onClick = {
+                if (amount.isNotEmpty() &&
+                    selectedCategory.isNotEmpty() &&
+                    itemName.isNotEmpty() &&
+                    dateValue.isNotEmpty() &&
+                    timeValue.isNotEmpty()
+                ) {
+                    if (id.isNullOrEmpty()) {
+                        val hashMap = hashMapOf(
+                            "amount" to amount,
+                            "category" to selectedCategory,
+                            "itemName" to itemName,
+                            "dateValue" to dateValue,
+                            "timeValue" to timeValue
+                        )
+                        viewModel.saveExpenses(hashMap)
                     } else {
-                        chooseTime(context, onValueChange)
+                        val model = ExpensesModel(
+                            amount = amount,
+                            category = selectedCategory,
+                            itemName = itemName,
+                            dateValue = dateValue,
+                            timeValue = timeValue,
+                            id = id
+                        )
+                        viewModel.updateExpenses(id, model)
                     }
-                }) {
-            Text(
-                if (value.isNotEmpty()) value else if (title == "Date") "DD/MM/YYYY" else "HH:MM",
-                style = TextStyle(color = Color.Black, fontSize = 16.sp),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(10.dp)
-            )
-            Image(
-                painter = painterResource(icon),
-                contentDescription = title,
-            )
+                } else {
+                    Toast.makeText(
+                        context, "Fields are empty.", Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }, colors = ButtonDefaults.buttonColors(
+                contentColor = Color.White, containerColor = PrimaryColor
+            ), shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    if (id.isNullOrEmpty()) "Submit" else "Update",
+                    fontStyle = FontStyle.Normal,
+                    fontSize = 20.sp
+                )
+            }
         }
-    }
-}
+        when {
+            isLoading -> {
+                // Show loading indicator when data is being saved
+                CustomLoader(true)
+            }
 
-fun chooseTime(context: Context, onTimeSelected: (String) -> Unit) {
-    val calendar = Calendar.getInstance()
-    TimePickerDialog(
-        context, { _, hourOfDay, minute ->
-            val selectedTime = String.format("%02d:%02d", hourOfDay, minute)
-            onTimeSelected(selectedTime) // Update the Composable
-        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true
-    ).show()
-}
+            !errorMessage.isNullOrEmpty() -> {
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            }
 
-fun chooseDate(context: Context, onDateSelected: (String) -> Unit) {
-    val calendar = Calendar.getInstance() // Get current date
-
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val selectedDate = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
-            onDateSelected(selectedDate) // Update the Composable
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
-
-    // Restrict selection to only past and current dates
-    datePickerDialog.datePicker.maxDate = calendar.timeInMillis
-
-    datePickerDialog.show()
-}
-
-@Composable
-fun CommonEditViewWithLabel(
-    modifier: Modifier,
-    title: String,
-    text: String,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    onValueChange: (String) -> Unit
-) {
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(10.dp)
-    ) {
-
-        Text(title, style = TextStyle(color = Color.Black, fontSize = 16.sp))
-        TextField(
-            value = text.toString(),
-            onValueChange = { onValueChange(it) },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Type here...") },
-            textStyle = TextStyle(fontSize = 16.sp),
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = keyboardType),
-            colors = TextFieldDefaults.colors(
-                unfocusedContainerColor = Color.Transparent, // Transparent background
-                focusedContainerColor = Color.Transparent,
-                disabledContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
-            )
-        )
-    }
-}
-
-@Composable
-fun CustomToolBar(modifier: Modifier) {
-    Box(modifier.fillMaxWidth()) {
-        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(painter = painterResource(R.drawable.ic_arrow_back),
-                contentDescription = "Back Button",
-                modifier = Modifier.clickable {
-
-                })
-            Spacer(modifier = Modifier.width(10.dp))
-            Text("Add Expenses", style = TextStyle(color = Color.Black, fontSize = 16.sp))
+            else -> {
+                if (isSuccess) {
+                    Toast.makeText(
+                        context, "Successfully save record", Toast.LENGTH_SHORT
+                    ).show()
+                    //clear view
+                    amount = ""
+                    selectedCategory = ""
+                    itemName = ""
+                    dateValue = ""
+                    timeValue = ""
+                    navController?.popBackStack()
+                }
+            }
         }
     }
 }

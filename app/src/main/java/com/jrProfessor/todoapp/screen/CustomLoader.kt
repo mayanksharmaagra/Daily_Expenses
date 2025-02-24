@@ -34,7 +34,7 @@ fun CustomLoader(
             modifier = modifier
                 .fillMaxSize() // Fill the screen
                 .background(
-                    Color.Black.copy(alpha = 0.5f),
+                    Color.Black.copy(alpha = 0f),
                     shape = RoundedCornerShape(12.dp)
                 ), // Optional background overlay
             contentAlignment = Alignment.Center

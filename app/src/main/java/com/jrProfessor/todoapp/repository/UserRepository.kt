@@ -1,16 +1,20 @@
 package com.jrProfessor.todoapp.repository
 
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.gson.Gson
+import com.jrProfessor.todoapp.model.CategoryWiseExpenses
 import com.jrProfessor.todoapp.model.ExpensesModel
+import com.jrProfessor.todoapp.model.GoalsModel
 import com.jrProfessor.todoapp.model.User
 import com.jrProfessor.todoapp.utils.AppUtils.DB_NAME
 import com.jrProfessor.todoapp.utils.AppUtils.EXPENSES_TABLE
+import com.jrProfessor.todoapp.utils.AppUtils.GOAL_TABLE
 import com.jrProfessor.todoapp.utils.AppUtils.USERS
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -142,17 +146,22 @@ class UserRepository @Inject constructor(
     ) {
         val uid = firebaseAuth.currentUser?.uid!!
         val databaseReference = firebaseDatabase.getReference(DB_NAME)
-        databaseReference.child(EXPENSES_TABLE).child(uid)
-            .push() // Generates a unique key for each entry
-            .setValue(expenses)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    onSuccess(true)
+        val expensesRef = databaseReference.child(EXPENSES_TABLE).child(uid).push()
+        val expensesId = expensesRef.key
+        if (expensesId != null) {
+            expenses["id"] = expensesId
+            expensesRef.setValue(expenses)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        onSuccess(true)
 
-                } else {
-                    onError(false, "Database Error: ${task.exception?.message}")
+                    } else {
+                        onError(false, "Database Error: ${task.exception?.message}")
+                    }
                 }
-            }
+        } else {
+            onError(false, "Error generating unique ID")
+        }
     }
 
     fun getAllExpenses(
@@ -169,11 +178,8 @@ class UserRepository @Inject constructor(
 
                     for (expenseSnapshot in snapshot.children) {
                         val expense = expenseSnapshot.getValue(ExpensesModel::class.java)
-                        val key = expenseSnapshot.key // Get unique key of each expense
-
-                        if (expense != null && key != null) {
-                            expense.id = key // Assign the unique key to the expense
-                            expensesList.add(expense) // Add the expense to the list
+                        if (expense != null) {
+                            expensesList.add(expense)
                         }
                     }
 
@@ -186,4 +192,150 @@ class UserRepository @Inject constructor(
             })
     }
 
+    fun deleteCategory(
+        expensesId: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError("User not authenticated")
+        val databaseReference = firebaseDatabase.getReference(DB_NAME)
+        databaseReference.child(EXPENSES_TABLE).child(uid).child(expensesId).removeValue()
+            .addOnCompleteListener {
+                onSuccess("Successfully Remove")
+            }.addOnFailureListener { error ->
+                onError("Failed to delete ${error.message}")
+            }
+    }
+
+    fun updateExpenses(
+        expensesId: String,
+        model: ExpensesModel,
+        onSuccess: (String) -> Unit,
+        onError: (Boolean, String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+        val databaseReference = firebaseDatabase.getReference(DB_NAME)
+        databaseReference.child(EXPENSES_TABLE)
+            .child(uid)
+            .child(expensesId)
+            .setValue(model)
+            .addOnCompleteListener {
+                onSuccess("Successfully Updated Data")
+            }.addOnFailureListener { error ->
+                onError(false, "Failed to update ${error.message}")
+            }
+    }
+
+    fun fetchExpensesByCategory(
+        onResult: (List<CategoryWiseExpenses>) -> Unit,
+        onError: (Boolean, String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+        val databaseReference =
+            firebaseDatabase.getReference(DB_NAME).child(EXPENSES_TABLE).child(uid)
+        databaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val categoryWiseExpenses = mutableMapOf<String, MutableList<ExpensesModel>>()
+                val categoryTotalAmount = mutableMapOf<String, Double>()
+                for (expenseSnapshot in snapshot.children) { // Loop through all expenses
+                    val expense = expenseSnapshot.getValue(ExpensesModel::class.java)
+                    expense?.let {
+                        val category = it.category
+                        val amount = it.amount.toDoubleOrNull() ?: 0.0
+
+                        categoryWiseExpenses.getOrPut(it.category) { mutableListOf() }.add(it)
+                        // Calculate total amount for each category
+                        categoryTotalAmount[category] =
+                            categoryTotalAmount.getOrDefault(category, 0.0) + amount
+                    }
+                }
+
+                val finalResult = categoryWiseExpenses.map { (category, expenses) ->
+                    CategoryWiseExpenses(
+                        category = category,
+                        expenses = expenses,
+                        totalAmount = categoryTotalAmount[category] ?: 0.0
+                    )
+                }
+
+                onResult(finalResult)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                onError(false, "Database Error: ${error.message}")
+            }
+
+        })
+    }
+
+    fun saveGoal(
+        goal: HashMap<String, String>,
+        onSuccess: (Boolean) -> Unit,
+        onError: (Boolean, String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+        val databaseReference = firebaseDatabase.getReference(DB_NAME).child(GOAL_TABLE)
+        val goalRef = databaseReference.child(uid).push()
+        val goalId = goalRef.key
+        if (goalId != null) {
+            goal["id"] = goalId
+            goalRef.setValue(goal)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        onSuccess(true)
+                    } else {
+                        onError(false, "Database Error: ${task.exception?.message}")
+                    }
+                }
+        } else {
+            onError(false, "Error generating unique ID")
+        }
+    }
+
+    fun getAllGoals(
+        onSuccess: (List<GoalsModel>) -> Unit,
+        onError: (Boolean, String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+
+        val databaseReference = firebaseDatabase.getReference(DB_NAME)
+        databaseReference.child(GOAL_TABLE).child(uid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val goalList = mutableListOf<GoalsModel>()
+
+                    for (expenseSnapshot in snapshot.children) {
+                        val expense = expenseSnapshot.getValue(GoalsModel::class.java)
+                        if (expense != null) {
+                            goalList.add(expense)
+                        }
+                    }
+                    val jsonData = Gson().toJson(goalList)
+                    Log.d("FirebaseData", "Category-Wise Expenses: $jsonData")
+
+                    onSuccess(goalList)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    onError(false, "Database Error: ${error.message}")
+                }
+            })
+    }
+
+    fun deleteGoal(
+        goalId: String?,
+        onSuccess: (String) -> Unit,
+        onError: (Boolean, String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+        val databaseReference = firebaseDatabase.getReference(DB_NAME)
+        goalId?.let {
+            databaseReference.child(GOAL_TABLE).child(uid).child(it).removeValue()
+                .addOnCompleteListener {
+                    onSuccess("Successfully Remove")
+                }.addOnFailureListener { error ->
+                    onError(false, "Failed to delete ${error.message}")
+                }
+        }
+    }
 }
