@@ -22,7 +22,7 @@ class MainActivity : DaggerBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
         setContent {
             ToDoAppTheme {
                 MainApp()

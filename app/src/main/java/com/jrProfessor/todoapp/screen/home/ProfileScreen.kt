@@ -20,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -36,16 +37,22 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.navigation.NavHostController
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.model.GoalsModel
 import com.jrProfessor.todoapp.model.User
 import com.jrProfessor.todoapp.screen.common.ScreenClass
 import com.jrProfessor.todoapp.screen.welcome.MainActivity
 import com.jrProfessor.todoapp.ui.theme.GrayD6
 import com.jrProfessor.todoapp.ui.theme.PrimaryColor
+import com.jrProfessor.todoapp.utils.AppUtils
 import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 
 @Composable
 fun ProfileScreen(viewModel: HomeViewModel?, navController: NavHostController?) {
     viewModel?.let {
+        val goalList by viewModel.goals.observeAsState(emptyList())
+        LaunchedEffect(Unit) {
+            viewModel.getAllGoals()
+        }
         val user by viewModel.user.observeAsState()
         ConstraintLayout(
             modifier = Modifier
@@ -53,15 +60,16 @@ fun ProfileScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                 .background(Color.White),
         ) {
             val (box1, userView, categoryView, logoutView, deleteAccountView) = createRefs()
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .background(color = PrimaryColor)
-                .constrainAs(box1) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                })
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)
+                    .background(color = PrimaryColor)
+                    .constrainAs(box1) {
+                        top.linkTo(parent.top)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    })
 
             ProfileCard(user, modifier = Modifier.constrainAs(userView) {
                 start.linkTo(parent.start)
@@ -72,7 +80,7 @@ fun ProfileScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
                 top.linkTo(userView.bottom, margin = 20.dp)
-            }, navController)
+            }, navController, goalList)
             LogoutCard(modifier = Modifier.constrainAs(logoutView) {
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
@@ -141,20 +149,25 @@ fun ProfileCard(user: User?, modifier: Modifier) {
 }
 
 @Composable
-fun WalletCard(modifier: Modifier, navController: NavHostController?) {
-    Card(modifier = modifier
-        .padding(horizontal = 15.dp)
-        .fillMaxWidth(),
+fun WalletCard(modifier: Modifier, navController: NavHostController?, goalList: List<GoalsModel>) {
+    var totalAmount = 0.0
+    goalList.forEach {
+        totalAmount += it.addAmount.toInt()
+    }
+    Card(
+        modifier = modifier
+            .padding(horizontal = 15.dp)
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(2.dp), // High shadow,
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = Color.White),
         onClick = {
-            navController?.navigate(ScreenClass.AddExpense.route)
+            navController?.navigate(ScreenClass.AddWallet.route)
         }) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
@@ -170,14 +183,14 @@ fun WalletCard(modifier: Modifier, navController: NavHostController?) {
                     style = TextStyle(fontSize = 16.sp, color = GrayD6),
                     modifier = Modifier
                         .padding(vertical = 5.dp)
-                        .weight(.6f)
+                        .weight(.4f)
                 )
                 Text(
-                    text = "Rs. 00.00",
+                    text = "Rs. ${AppUtils.getAmount(totalAmount)}",
                     style = TextStyle(fontSize = 16.sp, color = GrayD6, textAlign = TextAlign.End),
                     modifier = Modifier
                         .padding(vertical = 5.dp)
-                        .weight(.3f)
+                        .weight(.5f)
                 )
             }
         }
@@ -187,9 +200,10 @@ fun WalletCard(modifier: Modifier, navController: NavHostController?) {
 @Composable
 fun LogoutCard(modifier: Modifier, viewModel: HomeViewModel?) {
     val context = LocalContext.current
-    Card(modifier = modifier
-        .padding(horizontal = 15.dp)
-        .fillMaxWidth(),
+    Card(
+        modifier = modifier
+            .padding(horizontal = 15.dp)
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(2.dp), // High shadow,
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = Color.White),

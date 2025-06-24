@@ -180,7 +180,7 @@ fun ChildItem(expense: CategoryWiseExpenses? = null) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = AppUtils.getAmount(expense?.totalAmount.toString()) ?: "Price",
+                    text = AppUtils.getAmount(expense?.totalAmount) ?: "Price",
                     color = pieChartColors[expense?.category]!!,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold

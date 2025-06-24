@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,7 +59,7 @@ fun AddExpenseScreen(
     expenseModel: ExpensesModel?,
     navController: NavHostController? = null
 ) {
-    var amount by remember { mutableStateOf(expenseModel?.amount ?: "") }
+    var amount by remember { mutableDoubleStateOf(expenseModel?.amount ?: 0.0) }
     var selectedCategory by remember { mutableStateOf(expenseModel?.category ?: "Select Category") }
     var itemName by remember { mutableStateOf(expenseModel?.itemName ?: "") }
     var dateValue by remember { mutableStateOf(expenseModel?.dateValue ?: "") }
@@ -86,15 +87,16 @@ fun AddExpenseScreen(
                 title = "Add Expenses",
                 textColor = PrimaryColor
             )
-            CommonEditViewWithLabel(modifier = Modifier.constrainAs(amountField) {
-                top.linkTo(toolbar.bottom)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            },
+            CommonEditViewWithLabel(
+                modifier = Modifier.constrainAs(amountField) {
+                    top.linkTo(toolbar.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                },
                 title = "Amount",
-                text = amount,
+                text = amount.toString(),
                 keyboardType = KeyboardType.Number,
-                onValueChange = { amount = it })
+                onValueChange = { amount = it.toDouble() })
             IconSpinnerItem(
                 label = "Expense Category",
                 options = CATEGORY,
@@ -113,11 +115,12 @@ fun AddExpenseScreen(
                 end.linkTo(parent.end)
             }, text = itemName, title = "Item Name", onValueChange = { itemName = it })
 
-            CommonDateTimeViewWithLabel(modifier = Modifier.constrainAs(dateField) {
-                top.linkTo(itemField.bottom)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            }, title = "Date",
+            CommonDateTimeViewWithLabel(
+                modifier = Modifier.constrainAs(dateField) {
+                    top.linkTo(itemField.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }, title = "Date",
                 icon = R.drawable.ic_calendar,
                 value = dateValue,
                 onValueChange = { dateValue = it })
@@ -133,24 +136,25 @@ fun AddExpenseScreen(
                 value = timeValue,
                 onValueChange = { timeValue = it })
 
-            Button(modifier = Modifier.constrainAs(btnAddExpense) {
+            Button(
+                modifier = Modifier.constrainAs(btnAddExpense) {
                 top.linkTo(timeField.bottom)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
             }, onClick = {
-                if (amount.isNotEmpty() &&
+                if (amount.toString().isNotEmpty() &&
                     selectedCategory.isNotEmpty() &&
                     itemName.isNotEmpty() &&
                     dateValue.isNotEmpty() &&
                     timeValue.isNotEmpty()
                 ) {
                     if (id.isNullOrEmpty()) {
-                        val hashMap = hashMapOf(
-                            "amount" to amount,
-                            "category" to selectedCategory,
-                            "itemName" to itemName,
-                            "dateValue" to dateValue,
-                            "timeValue" to timeValue
+                        val hashMap = ExpensesModel(
+                            amount = amount,
+                            category = selectedCategory,
+                            itemName = itemName,
+                            dateValue = dateValue,
+                            timeValue = timeValue
                         )
                         viewModel.saveExpenses(hashMap)
                     } else {
@@ -196,7 +200,7 @@ fun AddExpenseScreen(
                         context, "Successfully save record", Toast.LENGTH_SHORT
                     ).show()
                     //clear view
-                    amount = ""
+                    amount = 0.0
                     selectedCategory = ""
                     itemName = ""
                     dateValue = ""

@@ -119,7 +119,7 @@ fun ExpenseScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                                 viewModel.deleteCategory(it)
                         }, navigateToEditExpenses = { id, _expense ->
                             navController?.navigate(
-                                ScreenClass.AddExpense.route + "/$id/${
+                                ScreenClass.AddExpense.route + "?id=$id&expense=${
                                     Uri.encode(
                                         Gson().toJson(
                                             _expense
@@ -292,7 +292,7 @@ fun HeaderView(modifier: Modifier, totalAmount: Double) {
             Text("Total Expenses", fontSize = 18.sp, color = Color.White)
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = AppUtils.getAmount(totalAmount.toString()) ?: "Total Amount",
+                text = AppUtils.getAmount(totalAmount) ?: "Total Amount",
                 fontSize = 30.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,

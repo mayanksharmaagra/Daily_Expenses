@@ -187,13 +187,9 @@ fun AddGoal(
 
 @Composable
 fun GoalItem(goal: GoalsModel?, deleteGoal: (String?) -> Unit) {
-    val _progress = if (goal?.addAmount?.isEmpty() == true) {
-        0f
-    } else {
-        (goal?.amount?.toFloat()?.let {
-            goal?.addAmount?.toFloat()?.div(it)
-        })?.times(100)
-    }
+    val _progress = (goal?.amount?.toFloat()?.let {
+        goal.addAmount.toFloat().div(it)
+    })?.times(100)
     val progress by remember { mutableFloatStateOf(_progress ?: 0f) }
     val startAngle by remember { mutableFloatStateOf(0f) }
     val progressBarWidth by remember { mutableStateOf(6.dp) }
@@ -239,7 +235,7 @@ fun GoalItem(goal: GoalsModel?, deleteGoal: (String?) -> Unit) {
                         )
                     )
                 }
-                if (goal?.addAmount?.isNullOrEmpty() != true) {
+                if (goal?.addAmount!=0.0) {
                     Spacer(Modifier.height(6.dp))
                     Text(
                         text = "${AppUtils.getAmount(goal?.addAmount)} out of ${

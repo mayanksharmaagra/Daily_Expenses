@@ -3,6 +3,7 @@ buildscript {
     dependencies {
         classpath(libs.kotlin.gradle.plugin)
         classpath(libs.google.services)
+        classpath("com.google.dagger:hilt-android-gradle-plugin:2.50") // use latest
     }
 }
 plugins {

@@ -87,7 +87,7 @@ object AppUtils {
         }
     }
 
-    fun getAmount(amount: String?): String? {
+    fun getAmount(amount: Double?): String? {
         return NumberFormat.getCurrencyInstance(Locale("en", "IN")).format(amount?.toDouble())
     }
 

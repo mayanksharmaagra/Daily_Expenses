@@ -54,7 +54,11 @@ fun HomeScreen(viewModel: HomeViewModel? = null) {
     Scaffold(
         bottomBar = {
             // Hide the BottomNavBar for the third fragment
-            if (currentDestination != ScreenClass.AddExpense.route) {
+            if (currentDestination !in listOf(
+                    ScreenClass.AddGoal.route,
+                    ScreenClass.AddExpense.route
+                )
+            ) {
                 BottomNavigationBar(navController)
             }
         },
@@ -62,16 +66,10 @@ fun HomeScreen(viewModel: HomeViewModel? = null) {
         floatingActionButton = {
             if (currentDestination == BottomNavScreen.Dashboard.route) {
                 FloatingActionButton(
-                    onClick = {
-                        navController.navigate(ScreenClass.AddExpense.route)
-                    },
+                    onClick = { navController.navigate(ScreenClass.AddExpense.route) },
                     backgroundColor = PrimaryColor
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add",
-                        tint = Color.White
-                    )
+                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                 }
             }
         },

@@ -16,6 +16,7 @@ import com.jrProfessor.todoapp.screen.common.ScreenClass
 import com.jrProfessor.todoapp.screen.home.AnalysisScreen
 import com.jrProfessor.todoapp.screen.home.AddExpenseScreen
 import com.jrProfessor.todoapp.screen.home.AddGoalScreen
+import com.jrProfessor.todoapp.screen.home.AddWalletScreen
 import com.jrProfessor.todoapp.screen.home.DashboardScreen
 import com.jrProfessor.todoapp.screen.home.ExpenseScreen
 import com.jrProfessor.todoapp.screen.home.ProfileScreen
@@ -33,7 +34,7 @@ fun BottomNavGraph(
         modifier = Modifier.padding(innerPadding)
     ) {
         composable(route = BottomNavScreen.Dashboard.route) {
-            DashboardScreen(viewModel,navController)
+            DashboardScreen(viewModel, navController)
         }
         composable(route = BottomNavScreen.Expenses.route) {
             ExpenseScreen(viewModel, navController)
@@ -54,11 +55,13 @@ fun BottomNavGraph(
                     type = NavType.StringType
                     defaultValue = null
                     nullable = true
-                },navArgument("expense") {
+                },
+                navArgument("expense") {
                     type = NavType.StringType
                     defaultValue = null
                     nullable = true
-                },)
+                },
+            )
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id");
             val expenseJson = backStackEntry.arguments?.getString("expense");
@@ -66,6 +69,9 @@ fun BottomNavGraph(
             val decodedExpenseJson = expenseJson?.let { Uri.decode(it) } // Decode JSON
             val expenseModel = Gson().fromJson(decodedExpenseJson, ExpensesModel::class.java)
             AddExpenseScreen(viewModel, id, expenseModel, navController)
+        }
+        composable(route = ScreenClass.AddWallet.route) {
+            AddWalletScreen(viewModel,navController)
         }
     }
 }

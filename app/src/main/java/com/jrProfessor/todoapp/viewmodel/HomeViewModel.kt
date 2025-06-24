@@ -49,7 +49,7 @@ class HomeViewModel @Inject constructor(
         })
     }
 
-    fun saveExpenses(expenses: HashMap<String, String>) {
+    fun saveExpenses(expenses: ExpensesModel) {
         _isLoading.value = true
 
         userRepository.saveExpenses(
@@ -105,7 +105,7 @@ class HomeViewModel @Inject constructor(
 
     }
 
-    fun saveGoal(goal: HashMap<String, String>) {
+    fun saveGoal(goal: HashMap<String, Any>) {
         _isLoading.value = true
 
         userRepository.saveGoal(
@@ -144,6 +144,22 @@ class HomeViewModel @Inject constructor(
                 _isLoading.value = false
             },
             onError = { _, message ->
+                _errorMessage.value = message
+                _isLoading.value = false
+            }
+        )
+    }
+
+    fun saveWalletForGoal(amount: Double, goalId: String) {
+        _isLoading.value = true
+
+        userRepository.saveWalletForGoal(
+            amount,goalId,
+            onSuccess = {
+                _isSuccess.value = true
+                _isLoading.value = false
+            },
+            onError = { status, message ->
                 _errorMessage.value = message
                 _isLoading.value = false
             }

@@ -140,7 +140,7 @@ class UserRepository @Inject constructor(
 
 
     fun saveExpenses(
-        expenses: HashMap<String, String>,
+        expenses: ExpensesModel,
         onSuccess: (Boolean) -> Unit,
         onError: (Boolean, String) -> Unit
     ) {
@@ -149,7 +149,7 @@ class UserRepository @Inject constructor(
         val expensesRef = databaseReference.child(EXPENSES_TABLE).child(uid).push()
         val expensesId = expensesRef.key
         if (expensesId != null) {
-            expenses["id"] = expensesId
+            expenses.id = expensesId
             expensesRef.setValue(expenses)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
@@ -231,8 +231,10 @@ class UserRepository @Inject constructor(
         onError: (Boolean, String) -> Unit
     ) {
         val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+
         val databaseReference =
             firebaseDatabase.getReference(DB_NAME).child(EXPENSES_TABLE).child(uid)
+
         databaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val categoryWiseExpenses = mutableMapOf<String, MutableList<ExpensesModel>>()
@@ -241,7 +243,7 @@ class UserRepository @Inject constructor(
                     val expense = expenseSnapshot.getValue(ExpensesModel::class.java)
                     expense?.let {
                         val category = it.category
-                        val amount = it.amount.toDoubleOrNull() ?: 0.0
+                        val amount = it.amount
 
                         categoryWiseExpenses.getOrPut(it.category) { mutableListOf() }.add(it)
                         // Calculate total amount for each category
@@ -269,7 +271,7 @@ class UserRepository @Inject constructor(
     }
 
     fun saveGoal(
-        goal: HashMap<String, String>,
+        goal: HashMap<String, Any>,
         onSuccess: (Boolean) -> Unit,
         onError: (Boolean, String) -> Unit
     ) {
@@ -337,5 +339,36 @@ class UserRepository @Inject constructor(
                     onError(false, "Failed to delete ${error.message}")
                 }
         }
+    }
+
+    fun saveWalletForGoal(
+        amount: Double,
+        goalId: String,
+        onSuccess: (String) -> Unit,
+        onError: (Boolean, String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid ?: return onError(false, "User not authenticated")
+        val databaseReference = firebaseDatabase.getReference(DB_NAME)
+        val goalRef = databaseReference.child(GOAL_TABLE).child(uid).child(goalId)
+
+        goalRef.child("addAmount").addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val oldAmount = snapshot.getValue(String::class.java)
+                Log.i("TAG", "saveWalletForGoal: $oldAmount")
+                val newAddAmount = oldAmount?.toDouble()!! + amount
+                goalRef.child("addAmount")
+                    .setValue(newAddAmount)
+                    .addOnSuccessListener {
+                        onSuccess("Wallet updated successfully")
+                    }
+                    .addOnFailureListener { error ->
+                        onError(false, "Failed to update addAmount: $error")
+                    }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("Firebase", "Error: ${error.message}")
+            }
+        })
     }
 }

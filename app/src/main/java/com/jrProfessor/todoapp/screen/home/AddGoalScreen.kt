@@ -33,6 +33,7 @@ import com.jrProfessor.todoapp.screen.common.IconSpinnerItem
 import com.jrProfessor.todoapp.ui.theme.PrimaryColor
 import com.jrProfessor.todoapp.utils.AppUtils.CATEGORY
 import com.jrProfessor.todoapp.viewmodel.HomeViewModel
+import java.io.Serializable
 
 @Preview
 @Composable
@@ -108,10 +109,10 @@ fun AddGoalScreen(
                     goalCategory.isNotEmpty() &&
                     goalName.isNotEmpty()
                 ) {
-                    val hashMap = hashMapOf(
+                    val hashMap = hashMapOf<String, Any>(
                         "amount" to goalAmount,
                         "goalCategory" to goalCategory,
-                        "addAmount" to "",
+                        "addAmount" to 0.0,
                         "goalName" to goalName,
                     )
                     viewModel.saveGoal(hashMap)
