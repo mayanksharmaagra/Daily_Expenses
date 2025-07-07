@@ -1,30 +1,74 @@
 package com.jrProfessor.todoapp.viewmodel
 
-import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import androidx.lifecycle.viewModelScope
+import com.jrProfessor.todoapp.intent.ResponseState
+import com.jrProfessor.todoapp.intent.UserAuthenticationIntent
 import com.jrProfessor.todoapp.model.User
 import com.jrProfessor.todoapp.repository.UserRepository
-import com.jrProfessor.todoapp.utils.AppUtils.DB_NAME
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@HiltViewModel
 class AuthenticationViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
-    fun signInAccount(
-        user: User,
-        onSuccess: (User?, String?) -> Unit,
-        onError: (User?, String?) -> Unit
-    ) {
-        userRepository.signInAccount(user, onSuccess, onError)
+    private val _state = MutableStateFlow(ResponseState<User>())
+    val authenticationState: StateFlow<ResponseState<User>> = _state
+    fun userAuthentication(intent: UserAuthenticationIntent, user: User) {
+        when (intent) {
+            UserAuthenticationIntent.UserSignUp -> {
+                signUpAccount(user)
+            }
+
+            UserAuthenticationIntent.UserSignIn -> {
+                signInAccount(user)
+            }
+        }
     }
 
-    fun signUpAccount(user: User, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
-        userRepository.signUpAccount(user, onSuccess, onError)
+    private fun signInAccount(user: User) {
+        viewModelScope.launch {
+            userRepository.signInAccount(user)
+                .onStart {
+                    _state.value = _state.value.copy(loading = true)
+                }.catch { error ->
+                    _state.value = ResponseState(loading = false, error = error.message)
+                }.collect { result ->
+                    result.onSuccess {
+                        _state.value = ResponseState(
+                            loading = false, result = it, success = "Login Successful"
+                        )
+                    }
+                    result.onFailure {
+                        _state.value = ResponseState(loading = false, error = it.message)
+                    }
+                }
+        }
+    }
+
+    private fun signUpAccount(user: User) {
+        viewModelScope.launch {
+            userRepository.signUpAccount(user)
+                .onStart {
+                    _state.value = _state.value.copy(loading = true)
+                }.catch {
+                    _state.value = ResponseState(loading = false, error = it.message)
+                }.collect { result ->
+                    result.onSuccess {
+                        _state.value = ResponseState(loading = false, success = it)
+                    }
+                    result.onFailure {
+                        _state.value = ResponseState(loading = false, error = it.message)
+                    }
+                }
+        }
     }
 
     fun isLoggedIn() = userRepository.isLoggedIn()

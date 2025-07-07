@@ -2,10 +2,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt")
+    id("com.google.firebase.crashlytics")
     alias(libs.plugins.google.gms.google.services)
+    id("kotlin-kapt")
+    id("dagger.hilt.android.plugin")
 }
-//id("com.google.dagger.hilt.android")
 
 android {
     namespace = "com.jrProfessor.todoapp"
@@ -62,13 +63,14 @@ dependencies {
     implementation(libs.androidx.constraintlayout.compose)
 
 //    hilt
-//    implementation(libs.hilt.android)
-//    kapt(libs.hilt.compiler)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
     //dagger
-    implementation(libs.dagger)
-    kapt(libs.dagger.compiler)
-    implementation(libs.dagger.android)
-    kapt(libs.dagger.android.processor)
+//    implementation(libs.dagger)
+//    kapt(libs.dagger.compiler)
+//    implementation(libs.dagger.android)
+//    kapt(libs.dagger.android.processor)
     //viewmodel
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -77,9 +79,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     // navigation
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.material3)
-    implementation (libs.androidx.material)
+    implementation(libs.androidx.material)
 
     //roomdb
     implementation(libs.androidx.room.runtime)
@@ -92,5 +93,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.crashlytics)
+//    implementation(libs.firebase.crashlytics.gradle)
 
 }

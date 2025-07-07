@@ -27,7 +27,7 @@ import com.jrProfessor.todoapp.R
 @Composable
 fun CustomToolBar(
     modifier: Modifier,
-    navController: NavHostController? = null,
+    navController: NavHostController,
     icon: Painter,
     title: String,
     textColor: Color
@@ -38,7 +38,7 @@ fun CustomToolBar(
                 painter = icon,
                 contentDescription = "Back Button",
                 modifier = Modifier.clickable {
-                    navController?.popBackStack()
+                    navController.popBackStack()
                 },
                 tint = textColor,
             )

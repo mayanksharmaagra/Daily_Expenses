@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.jrProfessor.todoapp.R
 import com.jrProfessor.todoapp.screen.common.ActionButton
 import com.jrProfessor.todoapp.screen.home.HomeActivity
@@ -30,7 +31,7 @@ import com.jrProfessor.todoapp.viewmodel.AuthenticationViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun WelcomeScreen(activity: MainActivity, viewmodel: AuthenticationViewModel, onClick: () -> Unit) {
+fun WelcomeScreen(activity: MainActivity, viewmodel: AuthenticationViewModel=hiltViewModel(), onClick: () -> Unit) {
     val isLogged = viewmodel.isLoggedIn()
     val context = LocalContext.current
     Column(

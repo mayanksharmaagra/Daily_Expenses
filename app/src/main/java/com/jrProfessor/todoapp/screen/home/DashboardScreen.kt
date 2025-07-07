@@ -1,5 +1,6 @@
 package com.jrProfessor.todoapp.screen.home
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -26,12 +27,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,12 +45,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
-import com.google.gson.Gson
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.intent.UserExpenseIntent
 import com.jrProfessor.todoapp.model.GoalsModel
 import com.jrProfessor.todoapp.model.User
 import com.jrProfessor.todoapp.screen.CustomLoader
+import com.jrProfessor.todoapp.screen.bottomnav.BottomNavScreen
 import com.jrProfessor.todoapp.screen.common.CircularProgressBar
 import com.jrProfessor.todoapp.screen.common.ScreenClass
 import com.jrProfessor.todoapp.ui.theme.CardColor
@@ -58,28 +64,36 @@ import com.jrProfessor.todoapp.ui.theme.PrimaryColor
 import com.jrProfessor.todoapp.utils.AppUtils
 import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 import java.util.Calendar
+import androidx.compose.runtime.*
 
 @Preview
 @Composable
 fun DashboardScreenPreview() {
-    DashboardScreen()
+
 }
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun DashboardScreen(
-    viewModel: HomeViewModel? = null, navHostController: NavHostController? = null
+    viewModel: HomeViewModel = hiltViewModel(), navHostController: NavHostController
 ) {
-    viewModel?.let {
+    viewModel.let {
 
-        val user by viewModel.user.observeAsState()
-        val goalList by viewModel.goals.observeAsState(emptyList())
-        val errorMessage by viewModel.errorMessage.observeAsState()
-        val isLoading by viewModel.isLoading.observeAsState(false)
+        val user by viewModel.user.observeAsState()//observeAsState use for live data
+        val goalsState by viewModel.goalsState.collectAsState()//collectAsState use for flow data
 
+        /*LaunchedEffect(navHostController) {
+            navHostController.currentBackStackEntryFlow.collect { backStackEntry ->
+                val destination = backStackEntry.destination.route
+                if (destination == BottomNavScreen.Dashboard.route) {
+                    viewModel.performUserExpenseIntent(UserExpenseIntent.GetAllGoals)
+                }
+            }
+        }*/
         LaunchedEffect(Unit) {
-            viewModel.getAllGoals()
+            viewModel.performUserExpenseIntent(UserExpenseIntent.GetAllGoals)
         }
-        Log.e("TAG", "DashboardScreen: " + Gson().toJson(goalList))
+
         ConstraintLayout(
             modifier = Modifier
                 .fillMaxSize()
@@ -87,33 +101,46 @@ fun DashboardScreen(
         ) {
 
             val (box1, userHeader, goal) = createRefs()
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .background(color = PrimaryColor)
-                .constrainAs(box1) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                })
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)
+                    .background(color = PrimaryColor)
+                    .constrainAs(box1) {
+                        top.linkTo(parent.top)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    })
             ShowUserHeader(user, modifier = Modifier.constrainAs(userHeader) {
                 top.linkTo(box1.bottom)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
             })
             when {
-                isLoading -> {
+                goalsState.loading -> {
                     CustomLoader(true)
                 }
 
-                errorMessage != null -> {
+                !goalsState.success.isNullOrEmpty() -> {
+                    AddGoal(modifier = Modifier.constrainAs(goal) {
+                        top.linkTo(box1.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    }, goalsState.result, navigate = {
+                        navHostController?.navigate(it)
+                    }, deleteGoal = {
+                        viewModel.performUserExpenseIntent(UserExpenseIntent.DeleteGoals, it)
+                    })
+                }
+
+                !goalsState.error.isNullOrEmpty() -> {
                     Column(
                         modifier = Modifier.fillMaxSize(), // Fill the entire screen
                         verticalArrangement = Arrangement.Center, // Center vertically
                         horizontalAlignment = Alignment.CenterHorizontally // Center horizontally
                     ) {
                         androidx.compose.material3.Text(
-                            text = errorMessage ?: "Something went wrong",
+                            text = goalsState.error ?: "Something went wrong",
                             color = Color.Red,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
@@ -121,16 +148,6 @@ fun DashboardScreen(
                         )
                     }
                 }
-
-                else -> AddGoal(modifier = Modifier.constrainAs(goal) {
-                    top.linkTo(box1.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }, goalList, navigate = {
-                    navHostController?.navigate(it)
-                }, deleteGoal = {
-                    viewModel.deleteGoal(it)
-                })
             }
         }
     }
@@ -161,7 +178,8 @@ fun AddGoal(
                         color = PrimaryColor, fontSize = 20.sp, fontWeight = FontWeight.Bold
                     )
                 )
-                Icon(painter = painterResource(R.drawable.more),
+                Icon(
+                    painter = painterResource(R.drawable.more),
                     contentDescription = "Back Button",
                     tint = PrimaryColor,
                     modifier = Modifier.clickable {
@@ -235,12 +253,12 @@ fun GoalItem(goal: GoalsModel?, deleteGoal: (String?) -> Unit) {
                         )
                     )
                 }
-                if (goal?.addAmount!=0.0) {
+                if (goal!=null && goal.addAmount.isNullOrEmpty()==false && goal.addAmount.toDouble() > 0.0) {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "${AppUtils.getAmount(goal?.addAmount)} out of ${
+                        text = "${AppUtils.getAmount(goal.addAmount.toDouble())} out of ${
                             AppUtils.getAmount(
-                                goal?.amount
+                                goal.amount.toDouble()
                             )
                         }",
                         color = AppUtils.pieChartColors[goal?.goalCategory] ?: CardTextColor,

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -47,7 +48,7 @@ fun HomeScreenView(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel? = null) {
+fun HomeScreen() {
     val navController = rememberNavController()
     val currentBackStack = navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStack.value?.destination?.route
@@ -76,7 +77,7 @@ fun HomeScreen(viewModel: HomeViewModel? = null) {
         floatingActionButtonPosition = FabPosition.End // FAB in center of bottom bar
     ) { innerPadding ->
 
-        BottomNavGraph(navController, innerPadding, viewModel)
+        BottomNavGraph(navController, innerPadding)
     }
 }
 

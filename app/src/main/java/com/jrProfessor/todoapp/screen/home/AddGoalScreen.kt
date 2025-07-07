@@ -9,8 +9,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -24,9 +26,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.intent.UserExpenseIntent
 import com.jrProfessor.todoapp.screen.CustomLoader
+import com.jrProfessor.todoapp.screen.bottomnav.BottomNavScreen
 import com.jrProfessor.todoapp.screen.common.CommonEditViewWithLabel
 import com.jrProfessor.todoapp.screen.common.CustomToolBar
 import com.jrProfessor.todoapp.screen.common.IconSpinnerItem
@@ -38,23 +43,20 @@ import java.io.Serializable
 @Preview
 @Composable
 fun PreviewGoalScreen(modifier: Modifier = Modifier) {
-    AddGoalScreen(null, null)
+
 }
 
 @Composable
 fun AddGoalScreen(
-    viewModel: HomeViewModel? = null,
-    navController: NavHostController? = null
+    viewModel: HomeViewModel = hiltViewModel(),
+    navController: NavHostController
 ) {
-    var goalAmount by remember { mutableStateOf("") }
+    var goalAmount by remember { mutableStateOf("0.0") }
     var goalCategory by remember { mutableStateOf("Select Category") }
     var goalName by remember { mutableStateOf("") }
     val context = LocalContext.current
-    viewModel?.let {
-        val isLoading by viewModel.isLoading.observeAsState(false)
-        val errorMessage by viewModel.errorMessage.observeAsState()
-        val isSuccess by viewModel.isSuccess.observeAsState(false)
-
+    viewModel.let {
+        val saveGoalState by viewModel.saveGoalState.collectAsState()
         ConstraintLayout(
             modifier = Modifier
                 .fillMaxSize()
@@ -78,13 +80,14 @@ fun AddGoalScreen(
                 end.linkTo(parent.end)
             }, text = goalName, title = "Goal Name", onValueChange = { goalName = it })
 
-            CommonEditViewWithLabel(modifier = Modifier.constrainAs(amountField) {
-                top.linkTo(itemField.bottom)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            },
+            CommonEditViewWithLabel(
+                modifier = Modifier.constrainAs(amountField) {
+                    top.linkTo(itemField.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                },
                 title = "Goal Amount",
-                text = goalAmount,
+                text = goalAmount.toString(),
                 keyboardType = KeyboardType.Number,
                 onValueChange = { goalAmount = it })
 
@@ -100,30 +103,34 @@ fun AddGoalScreen(
                 }
             )
 
-            Button(modifier = Modifier.constrainAs(btnAddExpense) {
-                top.linkTo(categorySpinner.bottom)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            }, onClick = {
-                if (goalAmount.isNotEmpty() &&
-                    goalCategory.isNotEmpty() &&
-                    goalName.isNotEmpty()
-                ) {
-                    val hashMap = hashMapOf<String, Any>(
-                        "amount" to goalAmount,
-                        "goalCategory" to goalCategory,
-                        "addAmount" to 0.0,
-                        "goalName" to goalName,
-                    )
-                    viewModel.saveGoal(hashMap)
-                } else {
-                    Toast.makeText(
-                        context, "Fields are empty.", Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }, colors = ButtonDefaults.buttonColors(
-                contentColor = Color.White, containerColor = PrimaryColor
-            ), shape = RoundedCornerShape(12.dp)
+            Button(
+                modifier = Modifier.constrainAs(btnAddExpense) {
+                    top.linkTo(categorySpinner.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }, onClick = {
+                    if (goalAmount.isEmpty() == false && goalAmount.toDouble() > 0 &&
+                        goalCategory.isNotEmpty() &&
+                        goalName.isNotEmpty()
+                    ) {
+                        val hashMap = hashMapOf<String, Any>(
+                            "amount" to goalAmount,
+                            "goalCategory" to goalCategory,
+                            "addAmount" to "0",
+                            "goalName" to goalName,
+                        )
+                        viewModel.performUserExpenseIntent(
+                            UserExpenseIntent.SaveGoal,
+                            goal = hashMap
+                        )
+                    } else {
+                        Toast.makeText(
+                            context, "Fields are empty.", Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }, colors = ButtonDefaults.buttonColors(
+                    contentColor = Color.White, containerColor = PrimaryColor
+                ), shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     "Add Goal",
@@ -133,24 +140,25 @@ fun AddGoalScreen(
             }
         }
         // ✅ Use LaunchedEffect to show toast only once
-        LaunchedEffect(isSuccess) {
-            if (isSuccess) {
-                Toast.makeText(context, "Successfully saved goal", Toast.LENGTH_SHORT).show()
-                goalAmount = ""
+        when {
+            saveGoalState.loading -> {
+                CustomLoader(true)
+            }
+
+            saveGoalState.success.isNullOrEmpty() == false -> {
+                Toast.makeText(context, saveGoalState.success, Toast.LENGTH_SHORT).show()
+                goalAmount = "0.0"
                 goalCategory = ""
                 goalName = ""
-                navController?.popBackStack()
-            }
-        }
 
-        LaunchedEffect(errorMessage) {
-            errorMessage?.let {
-                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                viewModel.resetSaveGoalState()
+                // Navigate back to dashboard
+                navController.popBackStack(BottomNavScreen.Dashboard.route, false)
             }
-        }
 
-        if (isLoading) {
-            CustomLoader(true) // Show loading indicator
+            saveGoalState.error.isNullOrEmpty() == false -> {
+                Toast.makeText(context, saveGoalState.error, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

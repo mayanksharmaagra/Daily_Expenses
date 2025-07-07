@@ -1,28 +1,26 @@
 package com.jrProfessor.todoapp.screen.welcome
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.ViewModelProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.jrProfessor.todoapp.dagger.DaggerBaseActivity
 import com.jrProfessor.todoapp.ui.theme.ToDoAppTheme
 import com.jrProfessor.todoapp.viewmodel.AuthenticationViewModel
-import dagger.android.AndroidInjection
+import dagger.hilt.android.AndroidEntryPoint
 
-class MainActivity : DaggerBaseActivity() {
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
     lateinit var navHost: NavHostController
-    private val viewmodel by lazy {
-        ViewModelProvider(this, viewmodelFactory)[AuthenticationViewModel::class.java]
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
+        enableEdgeToEdge()
         setContent {
             ToDoAppTheme {
                 MainApp()
@@ -37,12 +35,12 @@ class MainActivity : DaggerBaseActivity() {
             navController = navHost, startDestination = AuthNavGraph.Welcome.route
         ) {
             composable(AuthNavGraph.Welcome.route) {
-                WelcomeScreen(this@MainActivity,viewmodel) {
+                WelcomeScreen(this@MainActivity) {
                     navHost.navigate(AuthNavGraph.SignUp.route)
                 }
             }
             composable(AuthNavGraph.SignUp.route) {
-                SignUpScreen(this@MainActivity, viewmodel)
+                SignUpScreen(this@MainActivity)
             }
         }
     }

@@ -16,7 +16,7 @@ import com.jrProfessor.todoapp.utils.AppUtils.pieChartColors
 
 @Composable
 fun ExpensePieChart(expensesByCategory: List<CategoryWiseExpenses>) {
-    val totalAmount = expensesByCategory.sumOf { it.totalAmount }
+    val totalAmount = expensesByCategory.sumOf { it.totalAmount.toDouble() }
     val pieSize = 200.dp // Default size for the pie chart
     val density = LocalDensity.current
     Column(
@@ -31,7 +31,7 @@ fun ExpensePieChart(expensesByCategory: List<CategoryWiseExpenses>) {
             var startAngle = 0f
 
             expensesByCategory.forEachIndexed { index, categoryData ->
-                val sweepAngle = (categoryData.totalAmount / totalAmount * 360).toFloat()
+                val sweepAngle = (categoryData.totalAmount.toDouble() / totalAmount * 360).toFloat()
                 val colorBg = pieChartColors[categoryData.category]
                 drawArc(
                     color = colorBg!!,
@@ -47,7 +47,7 @@ fun ExpensePieChart(expensesByCategory: List<CategoryWiseExpenses>) {
 
                 // Dynamically adjust text size based on pie chart size
                 val textSizePx = with(density) { (size.minDimension * 0.03f).dp.toPx() }
-                val percentage = String.format("%.2f", (categoryData.totalAmount / totalAmount * 100)) + "%"
+                val percentage = String.format("%.2f", (categoryData.totalAmount.toDouble() / totalAmount * 100)) + "%"
 
                 // Draw White Text inside Pie Chart
                 drawContext.canvas.nativeCanvas.apply {

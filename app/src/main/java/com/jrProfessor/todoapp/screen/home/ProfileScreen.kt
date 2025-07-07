@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -35,8 +36,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.intent.UserExpenseIntent
 import com.jrProfessor.todoapp.model.GoalsModel
 import com.jrProfessor.todoapp.model.User
 import com.jrProfessor.todoapp.screen.common.ScreenClass
@@ -47,11 +50,11 @@ import com.jrProfessor.todoapp.utils.AppUtils
 import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 
 @Composable
-fun ProfileScreen(viewModel: HomeViewModel?, navController: NavHostController?) {
-    viewModel?.let {
-        val goalList by viewModel.goals.observeAsState(emptyList())
+fun ProfileScreen(viewModel: HomeViewModel= hiltViewModel(), navController: NavHostController) {
+    viewModel.let {
+        val goalList by viewModel.goalsState.collectAsState()
         LaunchedEffect(Unit) {
-            viewModel.getAllGoals()
+            viewModel.performUserExpenseIntent(UserExpenseIntent.GetAllGoals)
         }
         val user by viewModel.user.observeAsState()
         ConstraintLayout(
@@ -80,7 +83,7 @@ fun ProfileScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
                 top.linkTo(userView.bottom, margin = 20.dp)
-            }, navController, goalList)
+            }, navController, goalList.result)
             LogoutCard(modifier = Modifier.constrainAs(logoutView) {
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
@@ -149,9 +152,9 @@ fun ProfileCard(user: User?, modifier: Modifier) {
 }
 
 @Composable
-fun WalletCard(modifier: Modifier, navController: NavHostController?, goalList: List<GoalsModel>) {
+fun WalletCard(modifier: Modifier, navController: NavHostController, goalList: List<GoalsModel>?) {
     var totalAmount = 0.0
-    goalList.forEach {
+    goalList?.forEach {
         totalAmount += it.addAmount.toInt()
     }
     Card(
@@ -198,7 +201,7 @@ fun WalletCard(modifier: Modifier, navController: NavHostController?, goalList: 
 }
 
 @Composable
-fun LogoutCard(modifier: Modifier, viewModel: HomeViewModel?) {
+fun LogoutCard(modifier: Modifier, viewModel: HomeViewModel) {
     val context = LocalContext.current
     Card(
         modifier = modifier
@@ -208,7 +211,7 @@ fun LogoutCard(modifier: Modifier, viewModel: HomeViewModel?) {
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = Color.White),
         onClick = {
-            viewModel?.logout {
+            viewModel.logout {
                 if (it) {
                     Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
                     context.startActivity(Intent(context, MainActivity::class.java))
@@ -280,6 +283,5 @@ fun DeleteAccountCard(modifier: Modifier) {
 
 @Preview
 @Composable
-fun ProfilePreview(modifier: Modifier = Modifier) {
-    ProfileScreen(null, null)
+fun ProfilePreview() {
 }

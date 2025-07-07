@@ -20,13 +20,11 @@ import com.jrProfessor.todoapp.screen.home.AddWalletScreen
 import com.jrProfessor.todoapp.screen.home.DashboardScreen
 import com.jrProfessor.todoapp.screen.home.ExpenseScreen
 import com.jrProfessor.todoapp.screen.home.ProfileScreen
-import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 
 @Composable
 fun BottomNavGraph(
     navController: NavHostController,
-    innerPadding: PaddingValues,
-    viewModel: HomeViewModel?
+    innerPadding: PaddingValues
 ) {
     NavHost(
         navController = navController,
@@ -34,19 +32,19 @@ fun BottomNavGraph(
         modifier = Modifier.padding(innerPadding)
     ) {
         composable(route = BottomNavScreen.Dashboard.route) {
-            DashboardScreen(viewModel, navController)
+            DashboardScreen(navHostController = navController)
         }
         composable(route = BottomNavScreen.Expenses.route) {
-            ExpenseScreen(viewModel, navController)
+            ExpenseScreen(navController = navController)
         }
         composable(route = BottomNavScreen.Analysis.route) {
-            AnalysisScreen(viewModel)
+            AnalysisScreen(navController = navController)
         }
         composable(route = BottomNavScreen.Profile.route) {
-            ProfileScreen(viewModel, navController)
+            ProfileScreen(navController = navController)
         }
         composable(route = ScreenClass.AddGoal.route) {
-            AddGoalScreen(viewModel, navController)
+            AddGoalScreen(navController = navController)
         }
         composable(
             route = ScreenClass.AddExpense.route + "?id={id}&expense={expense}",
@@ -68,10 +66,10 @@ fun BottomNavGraph(
 
             val decodedExpenseJson = expenseJson?.let { Uri.decode(it) } // Decode JSON
             val expenseModel = Gson().fromJson(decodedExpenseJson, ExpensesModel::class.java)
-            AddExpenseScreen(viewModel, id, expenseModel, navController)
+            AddExpenseScreen(id = id, expenseModel = expenseModel, navController =  navController)
         }
         composable(route = ScreenClass.AddWallet.route) {
-            AddWalletScreen(viewModel,navController)
+            AddWalletScreen(navController = navController)
         }
     }
 }

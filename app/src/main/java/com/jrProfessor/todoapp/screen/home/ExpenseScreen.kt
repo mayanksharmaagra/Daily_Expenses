@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -40,10 +41,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.google.gson.Gson
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.intent.UserExpenseIntent
 import com.jrProfessor.todoapp.model.ExpensesModel
 import com.jrProfessor.todoapp.screen.CustomLoader
 import com.jrProfessor.todoapp.screen.common.ScreenClass
@@ -56,19 +59,15 @@ import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 @Preview
 @Composable
 fun Preview(modifier: Modifier = Modifier) {
-    ExpenseScreen(null, null)
-//    CategoryItem()
 }
 
 @Composable
-fun ExpenseScreen(viewModel: HomeViewModel?, navController: NavHostController?) {
+fun ExpenseScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHostController) {
     viewModel?.let {
-        val expenses by viewModel.expenses.observeAsState(emptyList())
-        val errorMessage by viewModel.errorMessage.observeAsState()
-        val isLoading by viewModel.isLoading.observeAsState(false)
+        val expensesState by viewModel.expensesState.collectAsState()
 
         LaunchedEffect(Unit) {
-            viewModel.getAllExpenses()
+            viewModel.performUserExpenseIntent(UserExpenseIntent.GetAllExpenses)
         }
 
         ConstraintLayout(
@@ -77,31 +76,14 @@ fun ExpenseScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                 .background(Color.White),
         ) {
             when {
-                isLoading -> {
+                expensesState.loading -> {
                     CustomLoader(true)
                 }
 
-                errorMessage != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize(), // Fill the entire screen
-                        verticalArrangement = Arrangement.Center, // Center vertically
-                        horizontalAlignment = Alignment.CenterHorizontally // Center horizontally
-                    ) {
-                        Text(
-                            text = errorMessage ?: "Something went wrong",
-                            color = Color.Red,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
-
-                else -> {
+                expensesState.success.isNullOrEmpty() == false -> {
                     var totalAmount = 0.0
-                    expenses.forEach {
-                        totalAmount += it.amount?.toDouble()!!
+                    expensesState.result?.forEach {
+                        totalAmount += it.amount.toDouble()
                     }
                     val (header, categoryItem, noDataFound) = createRefs()
                     HeaderView(modifier = Modifier.constrainAs(header) {
@@ -109,14 +91,17 @@ fun ExpenseScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                     }, totalAmount)
-                    if (expenses.isNotEmpty()) {
+                    if (expensesState.result?.isNotEmpty() == true) {
                         CategoryDisplayView(Modifier.constrainAs(categoryItem) {
                             top.linkTo(header.bottom)
                             start.linkTo(parent.start)
                             end.linkTo(parent.end)
-                        }, expenses, deleteItem = {
+                        }, expensesState.result!!, deleteItem = {
                             if (!it.isNullOrEmpty())
-                                viewModel.deleteCategory(it)
+                                viewModel.performUserExpenseIntent(
+                                    UserExpenseIntent.DeleteCategory,
+                                    id = it
+                                )
                         }, navigateToEditExpenses = { id, _expense ->
                             navController?.navigate(
                                 ScreenClass.AddExpense.route + "?id=$id&expense=${
@@ -142,6 +127,23 @@ fun ExpenseScreen(viewModel: HomeViewModel?, navController: NavHostController?) 
                                 }
                                 .fillMaxSize()
                                 .wrapContentSize(Alignment.Center)
+                        )
+                    }
+                }
+
+                expensesState.error.isNullOrEmpty() == false -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize(), // Fill the entire screen
+                        verticalArrangement = Arrangement.Center, // Center vertically
+                        horizontalAlignment = Alignment.CenterHorizontally // Center horizontally
+                    ) {
+                        Text(
+                            text = expensesState.error ?: "Something went wrong",
+                            color = Color.Red,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 }
@@ -206,7 +208,7 @@ fun CategoryItem(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = AppUtils.getAmount(expense?.amount) ?: "Item Price",
+                    text = AppUtils.getAmount(expense?.amount?.toDouble()) ?: "Item Price",
                     color = AppUtils.pieChartColors[expense?.category] ?: CardTextColor,
                     fontSize = 12.sp
                 )

@@ -3,7 +3,6 @@ package com.jrProfessor.todoapp.screen.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,8 +21,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +33,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.intent.UserExpenseIntent
 import com.jrProfessor.todoapp.model.CategoryWiseExpenses
 import com.jrProfessor.todoapp.screen.CustomLoader
 import com.jrProfessor.todoapp.screen.common.CustomToolBar
@@ -46,14 +47,12 @@ import com.jrProfessor.todoapp.utils.AppUtils.pieChartColors
 import com.jrProfessor.todoapp.viewmodel.HomeViewModel
 
 @Composable
-fun AnalysisScreen(viewModel: HomeViewModel? = null) {
-    viewModel?.let {
-        val categoryWiseExpenses by viewModel.categoryWiseExpenses.observeAsState(emptyList())
-        val errorMessage by viewModel.errorMessage.observeAsState()
-        val isLoading by viewModel.isLoading.observeAsState(false)
+fun AnalysisScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHostController) {
+    viewModel.let {
+        val categoryWiseExpenses by viewModel.categoryWiseExpensesState.collectAsState()
 
         LaunchedEffect(Unit) {
-            viewModel.fetchExpensesByCategory()
+            viewModel.performUserExpenseIntent(UserExpenseIntent.FetchExpenseByCategory)
         }
         ConstraintLayout(
             modifier = Modifier
@@ -61,29 +60,13 @@ fun AnalysisScreen(viewModel: HomeViewModel? = null) {
                 .background(Color.White),
         ) {
             when {
-                isLoading -> {
+                categoryWiseExpenses.loading -> {
                     CustomLoader(true)
                 }
 
-                !errorMessage.isNullOrEmpty() -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize(), // Fill the entire screen
-                        verticalArrangement = Arrangement.Center, // Center vertically
-                        horizontalAlignment = Alignment.CenterHorizontally // Center horizontally
-                    ) {
-                        Text(
-                            text = errorMessage ?: "Something went wrong",
-                            color = Color.Red,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
-
-                else -> {
+                categoryWiseExpenses.success.isNullOrEmpty() == false -> {
                     val (categoryTitle, data, noDataFound) = createRefs()
-                    if (categoryWiseExpenses.isNotEmpty()) {
+                    if (categoryWiseExpenses.result?.isNotEmpty() == true) {
                         CustomToolBar(
                             Modifier.constrainAs(categoryTitle) {
                                 top.linkTo(parent.top)
@@ -92,16 +75,18 @@ fun AnalysisScreen(viewModel: HomeViewModel? = null) {
                             },
                             icon = painterResource(R.drawable.coins),
                             title = "Top Spending Categories",
-                            textColor = PrimaryColor
+                            textColor = PrimaryColor,
+                            navController = navController
                         )
 
                         CategoryWiseData(Modifier.constrainAs(data) {
                             top.linkTo(categoryTitle.bottom)
                             start.linkTo(parent.start)
                             end.linkTo(parent.end)
-                        }, categoryWiseExpenses)
+                        }, categoryWiseExpenses.result!!)
                     } else {
-                        Text(text = "No Expenses Found",
+                        Text(
+                            text = "No Expenses Found",
                             fontSize = 30.sp,
                             color = Color.Red,
                             modifier = Modifier
@@ -113,6 +98,22 @@ fun AnalysisScreen(viewModel: HomeViewModel? = null) {
                                 }
                                 .fillMaxSize()
                                 .wrapContentSize(Alignment.Center))
+                    }
+                }
+
+                categoryWiseExpenses.error.isNullOrEmpty() == false -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(), // Fill the entire screen
+                        verticalArrangement = Arrangement.Center, // Center vertically
+                        horizontalAlignment = Alignment.CenterHorizontally // Center horizontally
+                    ) {
+                        Text(
+                            text = categoryWiseExpenses.error ?: "Something went wrong",
+                            color = Color.Red,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(16.dp)
+                        )
                     }
                 }
             }
@@ -180,7 +181,7 @@ fun ChildItem(expense: CategoryWiseExpenses? = null) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = AppUtils.getAmount(expense?.totalAmount) ?: "Price",
+                    text = AppUtils.getAmount(expense?.totalAmount?.toDouble()) ?: "Price",
                     color = pieChartColors[expense?.category]!!,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -201,6 +202,6 @@ fun ChildItem(expense: CategoryWiseExpenses? = null) {
 
 @Preview
 @Composable
-fun PreviewCallback(modifier: Modifier = Modifier) {
-    AnalysisScreen()
+fun PreviewCallback() {
+
 }

@@ -12,6 +12,7 @@ object AppUtils {
     val EXPENSES_TABLE = "Expense_Table"
     val GOAL_TABLE = "Goal_Table"
     val USERS = "users"
+    val ADD_AMOUNT = "addAmount"
     val pieChartColors = mapOf(
         "Saving" to Color(0xFF1F77B4), // Dark Blue
         "Investment" to Color(0xFF9A4C07), // Dark Orange

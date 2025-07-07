@@ -34,7 +34,7 @@ import com.jrProfessor.todoapp.model.GoalsModel
 @Composable
 fun TextSpinnerItem(
     label: String,
-    options: List<GoalsModel>, // Pair of name and icon
+    options: List<GoalsModel>?, // Pair of name and icon
     selectedOption: String,
     onOptionSelected: (GoalsModel) -> Unit,
     modifier: Modifier,
@@ -79,7 +79,7 @@ fun TextSpinnerItem(
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(Color.White)
         ) {
-            options.forEach { item ->
+            options?.forEach { item ->
                 DropdownMenuItem(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {

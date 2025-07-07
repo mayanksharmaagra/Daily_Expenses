@@ -13,6 +13,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +32,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.intent.UserAuthenticationIntent
 import com.jrProfessor.todoapp.model.User
 import com.jrProfessor.todoapp.screen.CustomLoader
 import com.jrProfessor.todoapp.screen.common.ActionButton
@@ -49,8 +52,10 @@ fun SignUpScreenPreview(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel) {
+fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val state by viewmodel.authenticationState.collectAsState()
+
     /**signup related variable*/
     var signUpNameState by remember { mutableStateOf("") }
     var signUpMobileState by remember { mutableStateOf("") }
@@ -63,10 +68,7 @@ fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel) {
     var signInPasswordState by remember { mutableStateOf("") }
     var signInIsPasswordVisible by remember { mutableStateOf(false) }
 
-    var showToast by remember { mutableStateOf(false) }
     var isLoginView by remember { mutableStateOf(false) }
-    var toastMessage by remember { mutableStateOf("") }
-    var loadingState by remember { mutableStateOf(false) }  // To track the loading state
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -92,140 +94,31 @@ fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel) {
             ) {
                 //sign up compose view
                 if (!isLoginView) {
-                    Column(verticalArrangement = Arrangement.Center) {
-                        Text(
-                            "Create Account",
-                            color = PrimaryColor,
-                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(6.dp),
-                        )
-                        OutlinedTextField(
-                            value = signUpNameState,
-                            onValueChange = { signUpNameState = it },
-                            label = { Text("Full Name") },
-                            placeholder = { Text("Full Name...") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp)
-                        )
-                        OutlinedTextField(
-                            value = signUpEmailState,
-                            onValueChange = {
-                                signUpEmailState = it
-                            },
-                            label = { Text("Email") },
-                            placeholder = { Text("Email...") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp),
-                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
-                        )
-                        OutlinedTextField(
-                            value = signUpMobileState,
-                            onValueChange = { number ->
-                                if (number.all { it.isDigit() } && number.length <= 10) {
-                                    signUpMobileState = number
-                                }
-                            },
-                            label = { Text("Mobile no.") },
-                            placeholder = { Text("Mobile no.") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp),
-                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
-                        )
-                        OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp),
-                            value = signUpPasswordState,
-                            onValueChange = { password ->
-                                if (password.length <= 12) {
-                                    signUpPasswordState = password
-                                }
-                            },
-                            label = { Text("Password") },
-                            visualTransformation = if (signUpIsPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                val iconId =
-                                    if (signUpIsPasswordVisible) R.drawable.eye else R.drawable.hidden
-                                val description =
-                                    if (signUpIsPasswordVisible) "Hide password" else "Show password"
+                    SignUpForm(
+                        signUpNameState,
+                        { signUpNameState = it },
+                        signUpEmailState,
+                        { signUpEmailState = it },
+                        signUpMobileState,
+                        {
+                            if (it.all { ch -> ch.isDigit() } && it.length <= 10) signUpMobileState =
+                                it
+                        },
+                        signUpPasswordState,
+                        { if (it.length <= 12) signUpPasswordState = it },
+                        signUpIsPasswordVisible,
+                        { signUpIsPasswordVisible = !signUpIsPasswordVisible })
 
-                                IconButton(onClick = {
-                                    signUpIsPasswordVisible = !signUpIsPasswordVisible
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = iconId),
-                                        contentDescription = description,
-                                        modifier = Modifier.padding(10.dp)
-                                    )
-                                }
-                            },
-                            singleLine = true,
-                        )
-                    }
                 }
                 //sign in compose view
-                if (isLoginView) {
-                    Column(verticalArrangement = Arrangement.Center) {
-                        Text(
-                            "Sign-In",
-                            color = PrimaryColor,
-                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(6.dp),
-                        )
-                        OutlinedTextField(
-                            value = signInEmailState,
-                            onValueChange = {
-                                signInEmailState = it
-                            },
-                            label = { Text("Email") },
-                            placeholder = { Text("Email...") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp),
-                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
-                        )
-                        OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp),
-                            value = signInPasswordState,
-                            onValueChange = { password ->
-                                if (password.length <= 12) {
-                                    signInPasswordState = password
-                                }
-                            },
-                            label = { Text("Password") },
-                            visualTransformation = if (signInIsPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                val iconId =
-                                    if (signInIsPasswordVisible) R.drawable.eye else R.drawable.hidden
-                                val description =
-                                    if (signInIsPasswordVisible) "Hide password" else "Show password"
-
-                                IconButton(onClick = {
-                                    signInIsPasswordVisible = !signInIsPasswordVisible
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = iconId),
-                                        contentDescription = description,
-                                        modifier = Modifier.padding(10.dp)
-                                    )
-                                }
-                            },
-                            singleLine = true,
-                        )
-                    }
+                else {
+                    SignInForm(
+                        signInEmailState,
+                        { signInEmailState = it },
+                        signInPasswordState,
+                        { if (it.length <= 12) signInPasswordState = it },
+                        signInIsPasswordVisible,
+                        { signInIsPasswordVisible = !signInIsPasswordVisible })
                 }
                 Button(
                     modifier = Modifier.padding(0.dp),
@@ -250,7 +143,6 @@ fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel) {
                     ),
                     title = if (isLoginView) "Sign In" else "Create Account",
                     onClick = {
-                        loadingState=true
                         if (!isLoginView) {
                             val user = User(
                                 name = signUpNameState,
@@ -258,51 +150,190 @@ fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel) {
                                 password = signUpPasswordState,
                                 emailId = signUpEmailState
                             )
-                            viewmodel.signUpAccount(user,
-                                onSuccess = {
-                                    loadingState=false
-                                    toastMessage = it
-                                    showToast = true
-                                    isLoginView = true
-                                },
-                                onError = {
-                                    loadingState=false
-                                    toastMessage = it
-                                    showToast = true
-                                }
-                            )
+                            viewmodel.userAuthentication(UserAuthenticationIntent.UserSignUp, user)
                         } else {
                             val user = User(
                                 emailId = signInEmailState,
                                 password = signInPasswordState
                             )
-                            viewmodel.signInAccount(user,
-                                onSuccess = { user, _ ->
-                                    loadingState=false
-                                    if (user != null) {
-                                        val intent = Intent(context, HomeActivity::class.java)
-                                        context.startActivity(intent)
-                                        activity.finishAffinity()
-                                    }
-                                },
-                                onError = { _, message ->
-                                    loadingState=false
-                                    toastMessage = message.orEmpty()
-                                    showToast = true
-                                }
-                            )
+                            viewmodel.userAuthentication(UserAuthenticationIntent.UserSignIn, user)
                         }
                     }
                 )
             }
         }
-        if (showToast) {
-            CustomToast(
-                message = toastMessage,
-                iconRes = R.drawable.ic_error,
-                onDismiss = { showToast = false }
-            )
+        when {
+            state.loading -> {
+                CustomLoader(true)
+            }
+
+            state.success != null -> {
+                if (isLoginView) {
+                    if (state.result != null) {
+                        val intent = Intent(context, HomeActivity::class.java)
+                        context.startActivity(intent)
+                        activity.finishAffinity()
+                    }
+                } else {
+                    isLoginView=true
+                }
+                CustomToast(
+                    message = state.success!!,
+                    iconRes = R.drawable.ic_error,
+                    onDismiss = {
+
+                    }
+                )
+            }
+
+            state.error != null -> {
+                CustomLoader(false)
+                CustomToast(
+                    message = state.error!!,
+                    iconRes = R.drawable.ic_error,
+                    onDismiss = {
+
+                    }
+                )
+            }
+
         }
-        CustomLoader(loadingState)
+    }
+}
+
+@Composable
+fun SignInForm(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    isPasswordVisible: Boolean,
+    onTogglePasswordVisibility: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.Center) {
+        Text(
+            "Sign-In",
+            color = PrimaryColor,
+            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp),
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            label = { Text("Email") },
+            placeholder = { Text("Email...") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
+        )
+        OutlinedTextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp),
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("Password") },
+            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val iconId =
+                    if (isPasswordVisible) R.drawable.eye else R.drawable.hidden
+                val description =
+                    if (isPasswordVisible) "Hide password" else "Show password"
+
+                IconButton(onClick = onTogglePasswordVisibility) {
+                    Icon(
+                        painter = painterResource(id = iconId),
+                        contentDescription = description,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            },
+            singleLine = true,
+        )
+    }
+}
+
+@Composable
+fun SignUpForm(
+    name: String,
+    onNameChange: (String) -> Unit,
+    email: String,
+    onEmailChange: (String) -> Unit,
+    mobile: String,
+    onMobileChange: (String) -> Unit,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    isPasswordVisible: Boolean,
+    onTogglePasswordVisibility: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.Center) {
+        Text(
+            "Create Account",
+            color = PrimaryColor,
+            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp),
+        )
+        OutlinedTextField(
+            value = name,
+            onValueChange = onNameChange,
+            label = { Text("Full Name") },
+            placeholder = { Text("Full Name...") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp)
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            label = { Text("Email") },
+            placeholder = { Text("Email...") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
+        )
+        OutlinedTextField(
+            value = mobile,
+            onValueChange = onMobileChange,
+            label = { Text("Mobile no.") },
+            placeholder = { Text("Mobile no.") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+        )
+        OutlinedTextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp),
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("Password") },
+            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val iconId =
+                    if (isPasswordVisible) R.drawable.eye else R.drawable.hidden
+                val description =
+                    if (isPasswordVisible) "Hide password" else "Show password"
+
+                IconButton(onClick = onTogglePasswordVisibility) {
+                    Icon(
+                        painter = painterResource(id = iconId),
+                        contentDescription = description,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            },
+            singleLine = true,
+        )
     }
 }
