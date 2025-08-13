@@ -3,7 +3,9 @@ package com.jrProfessor.todoapp.screen.home
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -12,10 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +59,27 @@ fun AddWalletScreen(
         viewModel.performUserExpenseIntent(UserExpenseIntent.GetAllGoals)
     }
     viewModel.let {
+        when {
+            walletState.loading -> {
+                CustomLoader(true)
+            }
+
+            !walletState.success.isNullOrEmpty() -> {
+                Toast.makeText(
+                    context, walletState.success, Toast.LENGTH_SHORT
+                ).show()
+                //clear view
+                amount = "0.0"
+                selectedGoal = ""
+                viewModel.resetSaveGoalState()
+                // Navigate back to dashboard
+                navController.popBackStack(BottomNavScreen.Dashboard.route, false)
+            }
+
+            !walletState.error.isNullOrEmpty() -> {
+                Toast.makeText(context, walletState.error, Toast.LENGTH_SHORT).show()
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -89,20 +112,21 @@ fun AddWalletScreen(
                 onValueChange = { amount = it }
             )
             if (selectedId.isNotEmpty() && amount.isNotEmpty()) {
-                Text(
-                    text = (goalsState.result?.find { it.id == selectedId }?.amount?.toDouble()!! -
+                val remainingAmount =
+                    (goalsState.result?.find { it.id == selectedId }?.amount?.toDouble()!! -
                             (goalsState.result?.find { it.id == selectedId }?.addAmount?.toDouble()!! + amount.toDouble()))
-                        .toString(),
+                Text(
+                    text = remainingAmount.toString(),
                     fontStyle = FontStyle.Normal,
                     fontSize = 20.sp,
                     modifier = Modifier,
-                    color = Color.Red
+                    color = if (remainingAmount >= 0) Color.Green else Color.Red
                 )
             }
 
-
+            Spacer(modifier = Modifier.height(100.dp))
             Button(
-                modifier = Modifier,
+                modifier = Modifier.align(alignment = Alignment.CenterHorizontally),
                 onClick = {
                     if (amount.isNotEmpty() && amount.toDouble() > 0.0 && selectedId.isNotEmpty()) {
                         viewModel.performUserExpenseIntent(
@@ -124,27 +148,6 @@ fun AddWalletScreen(
                     fontStyle = FontStyle.Normal,
                     fontSize = 20.sp
                 )
-            }
-        }
-        when {
-            walletState.loading -> {
-                CustomLoader(true)
-            }
-
-            walletState.success.isNullOrEmpty() == false -> {
-                Toast.makeText(
-                    context, walletState.success, Toast.LENGTH_SHORT
-                ).show()
-                //clear view
-                amount = "0.0"
-                selectedGoal = ""
-                viewModel.resetSaveGoalState()
-                // Navigate back to dashboard
-                navController.popBackStack(BottomNavScreen.Dashboard.route, false)
-            }
-
-            !walletState.error.isNullOrEmpty() -> {
-                Toast.makeText(context, walletState.error, Toast.LENGTH_SHORT).show()
             }
         }
     }

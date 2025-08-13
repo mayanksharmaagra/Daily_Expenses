@@ -55,10 +55,11 @@ class UserRepositoryImpl @Inject constructor(
                             if (user != null) {
                                 saveUser(user)
                                 trySend(Result.success(user))
+                                close()
                             } else {
                                 trySend(Result.failure(Exception("User data not found")))
+                                close()
                             }
-                            close()
                         }
 
                         override fun onCancelled(error: DatabaseError) {
@@ -118,10 +119,11 @@ class UserRepositoryImpl @Inject constructor(
                         databaseReference.child(uid).setValue(user).addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 trySend(Result.success("Your information saved successfully"))
+                                close()
                             } else {
                                 trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
+                                close()
                             }
-                            close()
                         }.addOnFailureListener { error ->
                             trySend(Result.failure(Exception("Failed to signup ${error.message}")))
                             close()
@@ -219,10 +221,11 @@ class UserRepositoryImpl @Inject constructor(
         expensesRef.setValue(expenses).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 trySend(Result.success("Successfully save record"))
+                close()
             } else {
                 trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
+                close()
             }
-            close()
         }.addOnFailureListener { error ->
             trySend(Result.failure(Exception("Failed to save expenses ${error.message}")))
             close()
@@ -273,9 +276,13 @@ class UserRepositoryImpl @Inject constructor(
         val databaseReference =
             firebaseDatabase.getReference(DB_NAME).child(EXPENSES_TABLE).child(uid)
         databaseReference.child(expensesId).removeValue().addOnCompleteListener { task ->
-            if (task.isSuccessful) trySend(Result.success("Successfully Remove"))
-            else trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
-            close()
+            if (task.isSuccessful) {
+                trySend(Result.success("Successfully Remove"))
+                close()
+            } else {
+                trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
+                close()
+            }
         }.addOnFailureListener { error ->
             trySend(Result.failure(Exception("Failed to delete ${error.message}")))
             close()
@@ -298,9 +305,13 @@ class UserRepositoryImpl @Inject constructor(
                 firebaseDatabase.getReference(DB_NAME).child(EXPENSES_TABLE).child(uid)
                     .child(expensesId)
             databaseReference.setValue(model).addOnCompleteListener { task ->
-                if (task.isSuccessful) trySend(Result.success("Successfully update record"))
-                else trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
-                close()
+                if (task.isSuccessful) {
+                    trySend(Result.success("Successfully update record"))
+                    close()
+                } else {
+                    trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
+                    close()
+                }
             }.addOnFailureListener { error ->
                 trySend(Result.failure(Exception("Failed to update ${error.message}")))
                 close()
@@ -375,10 +386,11 @@ class UserRepositoryImpl @Inject constructor(
             goalRef.setValue(goal).addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     trySend(Result.success("Successfully save goal"))
+                    close()
                 } else {
                     trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
+                    close()
                 }
-                close()
             }.addOnFailureListener { error ->
                 trySend(Result.failure(Exception("Failed to save ${error.message}")))
                 close()
@@ -405,9 +417,13 @@ class UserRepositoryImpl @Inject constructor(
         val databaseReference = firebaseDatabase.getReference(DB_NAME).child(GOAL_TABLE).child(uid)
         goalId?.let {
             databaseReference.child(it).removeValue().addOnCompleteListener { task ->
-                if (task.isSuccessful) trySend(Result.success("Successfully Remove"))
-                else trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
-                close()
+                if (task.isSuccessful) {
+                    trySend(Result.success("Successfully Remove"))
+                    close()
+                } else {
+                    trySend(Result.failure(Exception("Database Error: ${task.exception?.message}")))
+                    close()
+                }
             }.addOnFailureListener { error ->
                 trySend(Result.failure(Exception("Failed to delete ${error.message}")))
                 close()
@@ -433,14 +449,20 @@ class UserRepositoryImpl @Inject constructor(
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val oldAmount = snapshot.getValue(String::class.java)
-                Log.i("TAG", "saveWalletForGoal: $oldAmount")
+                Log.i("TAG", "saveWalletForGoal:==== $oldAmount")
                 val newAddAmount = (oldAmount?.toDouble()!! + amount.toDouble()).toString()
-                goalRef.child(ADD_AMOUNT).setValue(newAddAmount).addOnSuccessListener {
-                    trySend(Result.success("Wallet updated successfully"))
-                }.addOnFailureListener { error ->
-                    trySend(Result.failure(Exception("Failed to update addAmount: $error")))
-                }
-                close()
+                goalRef
+                    .child(ADD_AMOUNT)
+                    .setValue(newAddAmount)
+                    .addOnSuccessListener {
+                        Log.i("TAG", "saveWalletForGoal:=== $newAddAmount")
+                        trySend(Result.success("Wallet updated successfully"))
+                        close()
+                    }.addOnFailureListener { error ->
+                        Log.i("TAG", "saveWalletForGoal:=== ${error.message}")
+                        trySend(Result.failure(Exception("Failed to update addAmount: ${error.message}")))
+                        close()
+                    }
             }
 
             override fun onCancelled(error: DatabaseError) {

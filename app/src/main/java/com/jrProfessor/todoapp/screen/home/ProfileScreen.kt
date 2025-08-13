@@ -155,7 +155,7 @@ fun ProfileCard(user: User?, modifier: Modifier) {
 fun WalletCard(modifier: Modifier, navController: NavHostController, goalList: List<GoalsModel>?) {
     var totalAmount = 0.0
     goalList?.forEach {
-        totalAmount += it.addAmount.toInt()
+        totalAmount += it.addAmount.toDouble()
     }
     Card(
         modifier = modifier
