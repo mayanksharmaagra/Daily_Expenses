@@ -48,7 +48,7 @@ fun HomeScreenView(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val currentBackStack = navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStack.value?.destination?.route

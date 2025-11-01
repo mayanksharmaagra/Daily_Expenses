@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Daily Expenses</string>
     <string name="title_activity_home">HomeActivity</string>
-    <string name="title_activity_demo">Demo</string>
+    <string name="title_activity_test">TestActivity</string>
 </resources>

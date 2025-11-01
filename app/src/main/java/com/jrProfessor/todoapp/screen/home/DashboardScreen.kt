@@ -99,7 +99,6 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .background(Color.White),
         ) {
-
             val (box1, userHeader, goal) = createRefs()
             Box(
                 modifier = Modifier

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jrProfessor.todoapp.R
+import com.jrProfessor.todoapp.screen.TestActivity
 import com.jrProfessor.todoapp.screen.common.ActionButton
 import com.jrProfessor.todoapp.screen.home.HomeActivity
 import com.jrProfessor.todoapp.ui.theme.PrimaryColor
@@ -59,7 +60,7 @@ fun WelcomeScreen(activity: MainActivity, viewmodel: AuthenticationViewModel=hil
         if (isLogged) {
             LaunchedEffect(Unit) {
                 delay(500) // Simulate a loading delay
-                activity.startActivity(Intent(context, HomeActivity::class.java))
+                activity.startActivity(Intent(context, TestActivity::class.java))
                 activity.finishAffinity()
             }
         } else {
