@@ -204,7 +204,7 @@ fun AddGoal(
 
 @Composable
 fun GoalItem(goal: GoalsModel?, deleteGoal: (String?) -> Unit) {
-    val _progress = (goal?.amount?.toFloat()?.let {
+    val _progress: Float? = (goal?.amount?.toFloat()?.let {
         goal.addAmount.toFloat().div(it)
     })?.times(100)
     val progress by remember { mutableFloatStateOf(_progress ?: 0f) }

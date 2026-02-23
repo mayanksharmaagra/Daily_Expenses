@@ -94,7 +94,7 @@ fun SignUpScreen(activity: MainActivity, viewmodel: AuthenticationViewModel = hi
             ) {
                 //sign up compose view
                 if (!isLoginView) {
-                    SignUpForm(
+                        SignUpForm(
                         signUpNameState,
                         { signUpNameState = it },
                         signUpEmailState,
